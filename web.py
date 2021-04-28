@@ -24,6 +24,7 @@ import utils
 from fcm import FCM
 from web_utils import bad_request, get_json_params
 import paydb_core
+# pylint: disable=unused-import
 import admin
 
 #jsonrpc = JSONRPC(app, "/api")
