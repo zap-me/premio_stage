@@ -4,7 +4,7 @@ from flask_admin import helpers as admin_helpers
 
 from app_core import app, db, SERVER_MODE_WAVES
 from models import security, RestrictedModelView, ProposalModelView, UserModelView, TopicModelView, WavesTxModelView, PayDbApiKeyModelView, PayDbUserTransactionsView, \
-    UserModelView, TopicModelView, UserStashModelView, UserStashBaseModelView , UserStashRequestModelView, UserStashRequestBaseModelView, \
+    UserModelView, TopicModelView, UserStashModelView, UserStashRequestModelView, \
     Role, User, ApiKey, PayDbTransaction, Category, Proposal, WavesTx, Topic, UserStash, UserStashRequest
 
 # Create admin
@@ -21,9 +21,7 @@ admin.add_view(RestrictedModelView(Role, db.session, category='Admin'))
 admin.add_view(RestrictedModelView(Category, db.session, category='Admin'))
 admin.add_view(TopicModelView(Topic, db.session, category='Admin'))
 admin.add_view(UserStashModelView(UserStash, db.session, category='Admin'))
-admin.add_view(UserStashBaseModelView(UserStash, db.session, category='User', endpoint='Stash_User'))
 admin.add_view(UserStashRequestModelView(UserStashRequest, db.session, category='Admin'))
-admin.add_view(UserStashRequestBaseModelView(UserStashRequest, db.session, category='User', endpoint='StashRequest_User'))
 admin.add_view(ProposalModelView(Proposal, db.session))
 if app.config['SERVER_MODE'] == SERVER_MODE_WAVES:
     admin.add_view(WavesTxModelView(WavesTx, db.session, name='Waves Transactions', category='Admin'))
