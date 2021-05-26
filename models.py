@@ -1048,3 +1048,69 @@ class PayDbUserTransactionsView(BaseModelView):
 
     def get_count_query(self):
         return self.session.query(db.func.count('*')).filter(or_(self.model.sender_token == current_user.token, self.model.recipient_token == current_user.token)) # pylint: disable=no-member
+
+class UserStashSchema(Schema):
+    key = fields.String()
+    email = fields.String()
+    IV = fields.String()
+    cyphertext = fields.String()
+    question = fields.String()
+
+class UserStash(db.Model):
+    __tablename__ = 'user_stash'
+    id = db.Column(db.Integer, primary_key=True)
+    question = db.Column(db.String)
+    key = db.Column(db.String)
+    email_hash = db.Column(db.String, nullable=False)
+    cyphertext = db.Column(db.String)
+    IV = db.Column(db.String)
+
+class UserStashModelView(RestrictedModelView):
+    can_create = True
+    can_delete = True
+    can_edit = False
+
+class UserStashBaseModelView(BaseOnlyUserOwnedModelView):
+    can_create = True
+    can_delete = True
+    can_edit = False
+
+class UserStashRequestSchema(Schema):
+    key = fields.String()
+    email = fields.String()
+    IV = fields.String()
+    cyphertext = fields.String()
+    question = fields.String()
+    token = fields.String()
+    action = fields.String()
+
+class UserStashRequest(db.Model):
+    ACTION_CREATE = 'create'
+    ACTION_UPDATE = 'update'
+
+    __tablename__ = 'user_stash_request'
+    id = db.Column(db.Integer, primary_key=True)
+    question = db.Column(db.String)
+    IV = db.Column(db.String)
+    key = db.Column(db.String)
+    email_hash = db.Column(db.String, nullable=False)
+    cyphertext = db.Column(db.String)
+    token = db.Column(db.String)
+    action = db.Column(db.String)
+    secret = db.Column(db.String)
+
+    #created_stash = db.relationship('UserStash', backref=db.backref('userstash_2_userstashrequest', lazy='dynamic')))
+
+    @classmethod
+    def from_token(cls, session, token):
+        return session.query(cls).filter(cls.token == token).first()
+
+class UserStashRequestModelView(RestrictedModelView):
+    can_create = True
+    can_delete = True
+    can_edit = False
+
+class UserStashRequestBaseModelView(BaseOnlyUserOwnedModelView):
+    can_create = True
+    can_delete = True
+    can_edit = False
