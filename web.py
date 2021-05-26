@@ -47,6 +47,8 @@ if SERVER_MODE == SERVER_MODE_WAVES:
     # paydb blueprint
     from mw_endpoint import mw
     app.register_blueprint(mw, url_prefix='/mw')
+    from stash_endpoint import stash_bp
+    app.register_blueprint(stash_bp, url_prefix='/stash')
 elif SERVER_MODE == SERVER_MODE_PAYDB:
     OPERATIONS_ACCOUNT = app.config["OPERATIONS_ACCOUNT"]
     # paydb blueprint
