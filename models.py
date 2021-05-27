@@ -30,7 +30,7 @@ from sqlalchemy import or_
 from sqlalchemy.exc import SQLAlchemyError, DBAPIError
 
 from app_core import app, db
-from utils import generate_key, is_email, is_mobile, is_address
+from utils import generate_key, is_email, is_mobile, is_address, sha256
 
 logger = logging.getLogger(__name__)
 
@@ -1049,68 +1049,52 @@ class PayDbUserTransactionsView(BaseModelView):
     def get_count_query(self):
         return self.session.query(db.func.count('*')).filter(or_(self.model.sender_token == current_user.token, self.model.recipient_token == current_user.token)) # pylint: disable=no-member
 
-class UserStashSchema(Schema):
-    key = fields.String()
-    email = fields.String()
-    IV = fields.String()
-    cyphertext = fields.String()
-    question = fields.String()
-
 class UserStash(db.Model):
-    __tablename__ = 'user_stash'
     id = db.Column(db.Integer, primary_key=True)
-    question = db.Column(db.String)
     key = db.Column(db.String)
     email_hash = db.Column(db.String, nullable=False)
-    cyphertext = db.Column(db.String)
     IV = db.Column(db.String)
+    cyphertext = db.Column(db.String)
+    question = db.Column(db.String)
 
-class UserStashModelView(RestrictedModelView):
-    can_create = True
-    can_delete = True
-    can_edit = False
-
-class UserStashBaseModelView(BaseOnlyUserOwnedModelView):
-    can_create = True
-    can_delete = True
-    can_edit = False
-
-class UserStashRequestSchema(Schema):
-    key = fields.String()
-    email = fields.String()
-    IV = fields.String()
-    cyphertext = fields.String()
-    question = fields.String()
-    token = fields.String()
-    action = fields.String()
+    def __init__(self, stash_request):
+        self.key = stash_request.key
+        self.email_hash = stash_request.email_hash
+        self.IV = stash_request.IV
+        self.cyphertext = stash_request.cyphertext
+        self.question = stash_request.question
 
 class UserStashRequest(db.Model):
+    MINUTES_EXPIRY = 30
     ACTION_CREATE = 'create'
     ACTION_UPDATE = 'update'
 
-    __tablename__ = 'user_stash_request'
     id = db.Column(db.Integer, primary_key=True)
-    question = db.Column(db.String)
-    IV = db.Column(db.String)
     key = db.Column(db.String)
     email_hash = db.Column(db.String, nullable=False)
+    IV = db.Column(db.String)
     cyphertext = db.Column(db.String)
-    token = db.Column(db.String)
-    action = db.Column(db.String)
-    secret = db.Column(db.String)
+    question = db.Column(db.String)
 
-    #created_stash = db.relationship('UserStash', backref=db.backref('userstash_2_userstashrequest', lazy='dynamic')))
+    action = db.Column(db.String)
+    token = db.Column(db.String)
+    secret = db.Column(db.String)
+    expiry = db.Column(db.DateTime())
+
+    created_stash_id = db.Column(db.Integer, db.ForeignKey('user_stash.id'))
+    created_stash = db.relationship('UserStash')
+
+    def __init__(self, key, email, IV, cyphertext, question, action):
+        self.key = key
+        self.email_hash = sha256(email)
+        self.IV = IV
+        self.cyphertext = cyphertext
+        self.question = question
+        self.action = action
+        self.token = secrets.token_urlsafe(8)
+        self.secret = secrets.token_urlsafe(16)
+        self.expiry = datetime.datetime.now() + datetime.timedelta(self.MINUTES_EXPIRY)
 
     @classmethod
     def from_token(cls, session, token):
         return session.query(cls).filter(cls.token == token).first()
-
-class UserStashRequestModelView(RestrictedModelView):
-    can_create = True
-    can_delete = True
-    can_edit = False
-
-class UserStashRequestBaseModelView(BaseOnlyUserOwnedModelView):
-    can_create = True
-    can_delete = True
-    can_edit = False

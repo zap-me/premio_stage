@@ -44,16 +44,17 @@ if SERVER_MODE == SERVER_MODE_WAVES:
     ADDRESS = app.config["WALLET_ADDRESS"]
     ASSET_ID = app.config["ASSET_ID"]
     TESTNET = app.config["TESTNET"]
-    # paydb blueprint
+    # master wallet blueprint
     from mw_endpoint import mw
     app.register_blueprint(mw, url_prefix='/mw')
-    from stash_endpoint import stash_bp
-    app.register_blueprint(stash_bp, url_prefix='/stash')
 elif SERVER_MODE == SERVER_MODE_PAYDB:
     OPERATIONS_ACCOUNT = app.config["OPERATIONS_ACCOUNT"]
     # paydb blueprint
     from paydb_endpoint import paydb
     app.register_blueprint(paydb, url_prefix='/paydb')
+# stash blueprint
+from stash_endpoint import stash_bp
+app.register_blueprint(stash_bp, url_prefix='/stash')
 
 def logger_setup(level, handler):
     logger.setLevel(level)

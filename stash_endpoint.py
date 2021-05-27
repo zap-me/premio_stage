@@ -3,29 +3,23 @@
 import logging
 import json
 import base64
+import time
+import datetime
 from urllib.parse import urlparse
 
-from flask import Blueprint, render_template, request, jsonify
+from flask import Blueprint, render_template, request, jsonify, flash, redirect
 from flask_jsonrpc.exceptions import OtherError
 
 from app_core import app, db
-#from models import WavesTx, WavesTxSig
 from models import UserStash, UserStashRequest
 import utils
-import tx_utils
 from web_utils import bad_request, get_json_params
+import web_utils
 
 logger = logging.getLogger(__name__)
 stash_bp = Blueprint('stash_bp', __name__, template_folder='templates')
-#userstash_blueprint = Blueprint('userstash_blueprint', __name__, template_folder='templates')
-
-@stash_bp.route('/')
-#@userstash_blueprint.route('/')
-def index():
-    return "This is an example app"
 
 @stash_bp.route('/save', methods=['POST'])
-#@userstash_blueprint.route('/save')
 def stash_save():
     content = request.get_json(force=True)
     if content is None:
@@ -34,25 +28,14 @@ def stash_save():
     if err_response:
         return err_response
     key, email, IV, cyphertext, question = params
-    stash_req = UserStashRequest()
-    stash_req.key = key
-    stash_req.email_hash = hash(email)
-    stash_req.IV = IV
-    stash_req.cyphertext = cyphertext
-    stash_req.question = question
-    stash_req.action = stash_req.ACTION_CREATE
-    stash_req.token = utils.generate_key(8)
-    stash_req.secret = utils.generate_key(16)
+    stash_req = UserStashRequest(key, email, IV, cyphertext, question, UserStashRequest.ACTION_CREATE)
     db.session.add(stash_req)
     db.session.commit()
-    utils.email_stash_create(logger, email, stash_req)
+    utils.email_stash_request(logger, email, stash_req, stash_req.MINUTES_EXPIRY)
     return jsonify(dict(token=stash_req.token))
 
 @stash_bp.route('/save_check/<token>')
-#@userstash_blueprint.route('/save_confirm')
 def stash_save_check(token=None):
-    #return 'this is stash save confirm'
-    ### TODO
     req = UserStashRequest.from_token(db.session, token)
     if not req:
         return bad_request()
@@ -74,10 +57,13 @@ def stash_save_confirm(token=None, secret=None):
         flash('STASH code invaid.', 'danger')
         return redirect('/')
     if request.method == 'POST':
-        stash = UserStash()
-        # copy detauls from req => stash
-
-
+        confirm = request.form.get('confirm') == 'true'
+        if not confirm:
+            db.session.delete(req)
+            db.session.commit()
+            flash('STASH cancelled.', 'success')
+            return redirect('/')
+        stash = UserStash(req)
         req.created_stash = stash
         db.session.add(req)
         db.session.add(stash)
@@ -91,7 +77,7 @@ def stash_save_confirm(token=None, secret=None):
 def stash_load(email, key):
     return 'this is stash load'
 
-@stash_bp.route('/stash_load_confirm')
+@stash_bp.route('/load_confirm')
 #@userstash_blueprint.route('/load_confirm')
 def stash_load_confirm(load_token):
     return 'this is stash load confirm'
