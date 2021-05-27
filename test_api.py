@@ -62,6 +62,14 @@ def construct_parser():
     parser_payment_create.add_argument("recipient", metavar="RECIPIENT", type=str, help="the recipient of the payment")
     parser_payment_create.add_argument("amount", metavar="AMOUNT", type=int, help="the payment amount (integer, cents)")
     parser_payment_create.add_argument("message", metavar="MESSAGE", type=str, help="the message for the recipient")
+
+    parser_stash_save = subparsers.add_parser("stash_save", help="Test for stash save endpoiny")
+    parser_stash_save.add_argument("api_key_token", metavar="API_KEY_TOKEN", type=str, help="the API KEY token")
+    parser_stash_save.add_argument("api_key_secret", metavar="API_KEY_SECRET", type=str, help="the API KEY secret")
+    parser_stash_save.add_argument("key", metavar="KEY", type=str, help="KEY")
+    parser_stash_save.add_argument("IV", metavar="IV", type=str, help="IV")
+    parser_stash_save.add_argument("email", metavar="EMAIL", type=str, help="email address")
+    parser_stash_save.add_argument("cyphertext", metavar="CYPHERTEXT", type=str, help="cyphertext")
     return parser
 
 def req(endpoint, params=None, api_key_token=None, api_key_secret=None):
@@ -85,6 +93,9 @@ def req(endpoint, params=None, api_key_token=None, api_key_secret=None):
 
 def paydb_req(endpoint, params=None, api_key_token=None, api_key_secret=None):
     return req('paydb/' + endpoint, params, api_key_token, api_key_secret)
+
+def stash_req(endpoint, params=None, api_key_token=None, api_key_secret=None):
+    return req('stash/' + endpoint, params, api_key_token, api_key_secret)
 
 def check_request_status(r):
     try:
@@ -175,6 +186,8 @@ def run_parser():
         function = transaction_info
     elif args.command == "payment_create":
         function = payment_create
+    elif args.command == "stasg_save":
+        function = stash_save
     else:
         parser.print_help()
         sys.exit(EXIT_NO_COMMAND)
