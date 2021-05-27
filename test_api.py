@@ -63,9 +63,10 @@ def construct_parser():
     parser_payment_create.add_argument("amount", metavar="AMOUNT", type=int, help="the payment amount (integer, cents)")
     parser_payment_create.add_argument("message", metavar="MESSAGE", type=str, help="the message for the recipient")
 
-    parser_stash_save = subparsers.add_parser("stash_save", help="Test for stash save endpoiny")
+    parser_stash_save = subparsers.add_parser("stash_save", help="Test for stash save endpoint")
     parser_stash_save.add_argument("api_key_token", metavar="API_KEY_TOKEN", type=str, help="the API KEY token")
     parser_stash_save.add_argument("api_key_secret", metavar="API_KEY_SECRET", type=str, help="the API KEY secret")
+    parser_stash_save.add_argument("question", metavar="QUESTION", type=str, help="question")
     parser_stash_save.add_argument("key", metavar="KEY", type=str, help="KEY")
     parser_stash_save.add_argument("IV", metavar="IV", type=str, help="IV")
     parser_stash_save.add_argument("email", metavar="EMAIL", type=str, help="email address")
@@ -167,8 +168,8 @@ def payment_create(args):
     check_request_status(r)
     print(r.text)
 
-def stash_create(args):
-    print(":: calling stash_create..")
+def stash_save(args):
+    print(":: calling stash_save..")
     r = req("stash_req", {"question": args.question, "IV": args.IV, "key": args.key, "email": args.email, "cyphertext": args.cyphertext}, args.api_key_token, args.api_key_secret)
     check_request_status(r)
     print(r.text)
@@ -192,8 +193,8 @@ def run_parser():
         function = transaction_info
     elif args.command == "payment_create":
         function = payment_create
-    elif args.command == "stash_create":
-        function = stash_create
+    elif args.command == "stash_save":
+        function = stash_save
     else:
         parser.print_help()
         sys.exit(EXIT_NO_COMMAND)
