@@ -60,6 +60,11 @@ def sms_payment_claim(logger, asset_name, payment, hours_expiry):
     email = str(payment.mobile) + "@transmitsms.com"
     send_email(logger, "{asset_name} Payment", msg, email)
 
+def email_stash_request(logger, email, req, minutes_expiry):
+    url = url_for("stash_bp.stash_save_confirm", token=req.token, secret=req.secret, _external=True)
+    msg = f"You have a pending stash request waiting!<br/><br/>Confirm your stash <a href='{url}'>here</a><br/><br/>Confirm within {minutes_expiry} minutes"
+    send_email(logger, "Confirm your stash request", msg, email)
+
 def generate_key(num=20):
     return binascii.hexlify(os.urandom(num)).decode()
 
