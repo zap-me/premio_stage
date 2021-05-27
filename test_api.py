@@ -167,6 +167,12 @@ def payment_create(args):
     check_request_status(r)
     print(r.text)
 
+def stash_create(args):
+    print(":: calling stash_create..")
+    r = req("stash_req", {"question": args.question, "IV": args.IV, "key": args.key, "email": args.email, "cyphertext": args.cyphertext}, args.api_key_token, args.api_key_secret)
+    check_request_status(r)
+    print(r.text)
+
 def run_parser():
     # parse arguments
     parser = construct_parser()
@@ -186,8 +192,8 @@ def run_parser():
         function = transaction_info
     elif args.command == "payment_create":
         function = payment_create
-    elif args.command == "stasg_save":
-        function = stash_save
+    elif args.command == "stash_create":
+        function = stash_create
     else:
         parser.print_help()
         sys.exit(EXIT_NO_COMMAND)
