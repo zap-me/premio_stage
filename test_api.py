@@ -12,9 +12,12 @@ import requests
 import socketio
 
 from web_utils import create_hmac_sig
+from utils import sha256
 
-URL_BASE = "http://localhost:5000/"
-WS_URL = "ws://localhost:5000/"
+#URL_BASE = "http://localhost:5000/"
+#WS_URL = "ws://localhost:5000/"
+URL_BASE = "http://localhost.ericktest:5000/"
+WS_URL = "ws://localhost.ericktest:5000/"
 
 EXIT_NO_COMMAND = 1
 
@@ -72,6 +75,10 @@ def construct_parser():
 
     parser_stash_save_check = subparsers.add_parser("stash_save_check", help="Check a user stash request")
     parser_stash_save_check.add_argument("token", metavar="TOKEN", type=str, help="The request token")
+
+    parser_stash_load = subparsers.add_parser("stash_load", help="Load a user stash")
+    parser_stash_load.add_argument("email", metavar="EMAIL", type=str, help="The email address to load")
+    parser_stash_load.add_argument("key", metavar="KEY", type=str, help="The name of the stash")
     return parser
 
 def req(endpoint, params=None, api_key_token=None, api_key_secret=None):
@@ -93,11 +100,52 @@ def req(endpoint, params=None, api_key_token=None, api_key_secret=None):
         r = requests.get(url)
     return r
 
+def req2(endpoint, params=None, api_key_token=None, api_key_secret=None):
+    if api_key_token:
+        if not params:
+            params = {}
+        params["nonce"] = int(time.time())
+        params["api_key"] = api_key_token
+    url = URL_BASE + endpoint
+    print(params)
+    if params:
+        headers = {"Content-type": "application/json"}
+        body = json.dumps(params)
+        if api_key_token:
+            headers["X-Signature"] = create_hmac_sig(api_key_secret, body)
+        
+        email = params["email"]
+        key = params["key"]
+        payload = {'email': email, 'key': key}
+        print('::')
+        print('::')
+        print('::')
+        print('::')
+        print(email)
+        print(key)
+        #payload = {'email': email, 'key': key}
+        r = requests.get(url, params=payload)
+        print(r)
+#        print("   POST - " + url)
+#        r = requests.post(url, headers=headers, data=body)
+#    else:
+#        print("   GET - " + url)
+#        r = requests.get(url)
+#    print("   GET - " + url)
+#    r = requests.get(url)
+#    return r
+#    url = URL_BASE + endpoint
+#    r = requests.get(url)
+    return url
+
 def paydb_req(endpoint, params=None, api_key_token=None, api_key_secret=None):
     return req('paydb/' + endpoint, params, api_key_token, api_key_secret)
 
 def stash_req(endpoint, params=None):
     return req('stash/' + endpoint, params)
+
+def stash_get(endpoint, params=None):
+    return req2('stash/' + endpoint, params)
 
 def check_request_status(r):
     try:
@@ -181,6 +229,13 @@ def stash_save_check(args):
     check_request_status(r)
     print(r.text)
 
+def stash_load(args):
+    print(":: calling load..")
+    email_hash = sha256(args.email)
+    r = stash_get("load", {"email": email_hash, "key": args.key})
+    #check_request_status(r)
+    print(r)
+
 def run_parser():
     # parse arguments
     parser = construct_parser()
@@ -204,6 +259,8 @@ def run_parser():
         function = stash_save
     elif args.command == "stash_save_check":
         function = stash_save_check
+    elif args.command == "stash_load":
+        function = stash_load
     else:
         parser.print_help()
         sys.exit(EXIT_NO_COMMAND)
