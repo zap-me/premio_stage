@@ -2,13 +2,13 @@
 
 import logging
 import json
-import base64
+#import base64
 import time
 import datetime
-from urllib.parse import urlparse
+#from urllib.parse import urlparse
 
 from flask import Blueprint, render_template, request, jsonify, flash, redirect
-from flask_jsonrpc.exceptions import OtherError
+#from flask_jsonrpc.exceptions import OtherError
 
 from app_core import app, db
 from models import UserStash, UserStashRequest
@@ -40,7 +40,7 @@ def stash_save_check(token=None):
     if not req:
         return bad_request()
     return jsonify(dict(confirmed=req.created_stash != None))
-    
+
 @stash_bp.route('/save_confirm/<token>/<secret>', methods=['GET', 'POST'])
 def stash_save_confirm(token=None, secret=None):
     req = UserStashRequest.from_token(db.session, token)
@@ -73,14 +73,22 @@ def stash_save_confirm(token=None, secret=None):
     return render_template('stash/stash_confirm.html', req=req)
 
 @stash_bp.route('/load')
-#@userstash_blueprint.route('/load')
 def stash_load(email, key):
-    return 'this is stash load'
+    SERVER_NAME = app.config["SERVER_NAME"]
+    email_hash = utils.sha256(email)
+    stash_req = db.session.query(UserStashRequest).\
+        filter(UserStashRequest.email_hash == str(email_hash)).\
+        filter(UserStashRequest.key == key).first()
+    if stash_req:
+        ### send email but its erroring
+        #utils.email_stash_loadrequest(logger, email, stash_req, stash_req.MINUTES_EXPIRY)
+        #print(stash_req.token, stash_req.secret)
+        return stash_req
+    return False
 
-@stash_bp.route('/load_confirm')
-#@userstash_blueprint.route('/load_confirm')
+@stash_bp.route('/load_confirm/<token>/<secret>', methods=['GET', 'POST'])
 def stash_load_confirm(load_token):
-    return 'this is stash load confirm'
+    return render_template('stash/test.html')
 
 @app.route('/test1')
 def test1():
