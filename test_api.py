@@ -66,7 +66,7 @@ def construct_parser():
     parser_stash_save = subparsers.add_parser("stash_save", help="Save a user stash")
     parser_stash_save.add_argument("key", metavar="KEY", type=str, help="The name of the stash")
     parser_stash_save.add_argument("email", metavar="EMAIL", type=str, help="The email address to send confirmation")
-    parser_stash_save.add_argument("IV", metavar="IV", type=str, help="IV")
+    parser_stash_save.add_argument("iv", metavar="IV", type=str, help="IV")
     parser_stash_save.add_argument("cyphertext", metavar="CYPHERTEXT", type=str, help="cyphertext")
     parser_stash_save.add_argument("question", metavar="QUESTION", type=str, help="question")
 
@@ -171,7 +171,7 @@ def payment_create(args):
 
 def stash_save(args):
     print(":: calling save..")
-    r = stash_req("save", {"key": args.key, "email": args.email, "IV": args.IV, "cyphertext": args.cyphertext, "question": args.question})
+    r = stash_req("save", {"key": args.key, "email": args.email, "iv": args.iv, "cyphertext": args.cyphertext, "question": args.question})
     check_request_status(r)
     print(r.text)
 

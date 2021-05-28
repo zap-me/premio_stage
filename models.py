@@ -26,7 +26,7 @@ from wtforms.fields import TextField, DecimalField, FileField
 from wtforms import validators
 from marshmallow import Schema, fields
 from markupsafe import Markup
-from sqlalchemy import or_
+from sqlalchemy import or_, and_
 from sqlalchemy.exc import SQLAlchemyError, DBAPIError
 
 from app_core import app, db
@@ -1052,42 +1052,48 @@ class PayDbUserTransactionsView(BaseModelView):
 class UserStash(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     key = db.Column(db.String)
-    email_hash = db.Column(db.String, nullable=False)
-    IV = db.Column(db.String)
+    email_hash = db.Column(db.String, nullable=False, unique=True)
+    iv = db.Column(db.String)
     cyphertext = db.Column(db.String)
     question = db.Column(db.String)
 
     def __init__(self, stash_request):
         self.key = stash_request.key
         self.email_hash = stash_request.email_hash
-        self.IV = stash_request.IV
+        self.iv = stash_request.iv # pylint: disable=invalid-name
         self.cyphertext = stash_request.cyphertext
         self.question = stash_request.question
 
+    @classmethod
+    def from_email_hash(cls, session, key, email_hash):
+        return session.query(cls).filter(and_(cls.key == key, cls.email_hash == email_hash)).first()
+
 class UserStashRequest(db.Model):
     MINUTES_EXPIRY = 30
-    ACTION_CREATE = 'create'
-    ACTION_UPDATE = 'update'
+    ACTION_SAVE = 'save'
+    ACTION_LOAD = 'load'
 
     id = db.Column(db.Integer, primary_key=True)
     key = db.Column(db.String)
     email_hash = db.Column(db.String, nullable=False)
-    IV = db.Column(db.String)
+    iv = db.Column(db.String)
     cyphertext = db.Column(db.String)
     question = db.Column(db.String)
 
     action = db.Column(db.String)
-    token = db.Column(db.String)
+    token = db.Column(db.String, unique=True)
     secret = db.Column(db.String)
     expiry = db.Column(db.DateTime())
 
     created_stash_id = db.Column(db.Integer, db.ForeignKey('user_stash.id'))
-    created_stash = db.relationship('UserStash')
+    created_stash = db.relationship('UserStash', foreign_keys=[created_stash_id])
+    loaded_stash_id = db.Column(db.Integer, db.ForeignKey('user_stash.id'))
+    loaded_stash = db.relationship('UserStash', foreign_keys=[loaded_stash_id])
 
-    def __init__(self, key, email, IV, cyphertext, question, action):
+    def __init__(self, key, email, iv, cyphertext, question, action):
         self.key = key
         self.email_hash = sha256(email)
-        self.IV = IV
+        self.iv = iv # pylint: disable=invalid-name
         self.cyphertext = cyphertext
         self.question = question
         self.action = action

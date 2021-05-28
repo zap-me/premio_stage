@@ -52,9 +52,10 @@ elif SERVER_MODE == SERVER_MODE_PAYDB:
     # paydb blueprint
     from paydb_endpoint import paydb
     app.register_blueprint(paydb, url_prefix='/paydb')
-# stash blueprint
-from stash_endpoint import stash_bp
-app.register_blueprint(stash_bp, url_prefix='/stash')
+if app.config["USE_STASH"]:
+    # stash blueprint
+    from stash_endpoint import stash_bp
+    app.register_blueprint(stash_bp, url_prefix='/stash')
 
 def logger_setup(level, handler):
     logger.setLevel(level)

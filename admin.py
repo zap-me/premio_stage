@@ -4,7 +4,6 @@ from flask_admin import helpers as admin_helpers
 
 from app_core import app, db, SERVER_MODE_WAVES
 from models import security, RestrictedModelView, ProposalModelView, UserModelView, TopicModelView, WavesTxModelView, PayDbApiKeyModelView, PayDbUserTransactionsView, \
-    UserModelView, TopicModelView, \
     Role, User, ApiKey, PayDbTransaction, Category, Proposal, WavesTx, Topic, UserStash, UserStashRequest
 
 # Create admin

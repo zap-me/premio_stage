@@ -1,16 +1,12 @@
 # pylint: disable=unbalanced-tuple-unpacking
 
 import logging
-import json
-import base64
 import time
 import datetime
-from urllib.parse import urlparse
 
 from flask import Blueprint, render_template, request, jsonify, flash, redirect
-from flask_jsonrpc.exceptions import OtherError
 
-from app_core import app, db
+from app_core import db
 from models import UserStash, UserStashRequest
 import utils
 from web_utils import bad_request, get_json_params
@@ -24,27 +20,34 @@ def stash_save():
     content = request.get_json(force=True)
     if content is None:
         return bad_request(web_utils.INVALID_JSON)
-    params, err_response = get_json_params(content, ["key", "email", "IV", "cyphertext", "question"])
+    params, err_response = get_json_params(content, ["key", "email", "iv", "cyphertext", "question"])
     if err_response:
         return err_response
-    key, email, IV, cyphertext, question = params
-    stash_req = UserStashRequest(key, email, IV, cyphertext, question, UserStashRequest.ACTION_CREATE)
-    db.session.add(stash_req)
-    db.session.commit()
-    utils.email_stash_request(logger, email, stash_req, stash_req.MINUTES_EXPIRY)
-    return jsonify(dict(token=stash_req.token))
+    key, email, iv, cyphertext, question = params
+    stash = UserStash.from_email_hash(db.session, key, utils.sha256(email))
+    req = UserStashRequest(key, email, iv, cyphertext, question, UserStashRequest.ACTION_SAVE)
+    if not stash:
+        db.session.add(req)
+        db.session.commit()
+        utils.email_stash_save_request(logger, email, req, req.MINUTES_EXPIRY)
+        logger.info('stash save request %s created', req.token)
+    else:
+        logger.warning('stash for email %s exists, save request %s not created', email, req.token)
+        utils.email_stash_save_exists(logger, email, req)
+    return jsonify(dict(token=req.token))
 
 @stash_bp.route('/save_check/<token>')
 def stash_save_check(token=None):
     req = UserStashRequest.from_token(db.session, token)
     if not req:
-        return bad_request()
-    return jsonify(dict(confirmed=req.created_stash != None))
-    
+        return jsonify(dict(confirmed=False))
+    return jsonify(dict(confirmed=req.created_stash is not None))
+
 @stash_bp.route('/save_confirm/<token>/<secret>', methods=['GET', 'POST'])
 def stash_save_confirm(token=None, secret=None):
     req = UserStashRequest.from_token(db.session, token)
     if not req:
+        logger.warning('stash request %s not found', token)
         time.sleep(5)
         flash('STASH request not found.', 'danger')
         return redirect('/')
@@ -55,6 +58,9 @@ def stash_save_confirm(token=None, secret=None):
         return redirect('/')
     if req.secret != secret:
         flash('STASH code invaid.', 'danger')
+        return redirect('/')
+    if req.action != req.ACTION_SAVE:
+        flash('STASH action invaid.', 'danger')
         return redirect('/')
     if request.method == 'POST':
         confirm = request.form.get('confirm') == 'true'
@@ -70,203 +76,75 @@ def stash_save_confirm(token=None, secret=None):
         db.session.commit()
         flash('STASH confirmed.', 'success')
         return redirect('/')
-    return render_template('stash/stash_confirm.html', req=req)
+    return render_template('stash/stash_save_confirm.html', req=req)
 
-@stash_bp.route('/load')
-#@userstash_blueprint.route('/load')
-def stash_load(email, key):
-    return 'this is stash load'
+@stash_bp.route('/load', methods=['POST'])
+def stash_load():
+    content = request.get_json(force=True)
+    if content is None:
+        return bad_request(web_utils.INVALID_JSON)
+    params, err_response = get_json_params(content, ["key", "email"])
+    if err_response:
+        return err_response
+    key, email = params
+    stash = UserStash.from_email_hash(db.session, key, utils.sha256(email))
+    req = UserStashRequest(key, email, None, None, None, UserStashRequest.ACTION_LOAD)
+    if stash:
+        utils.email_stash_load_request(logger, email, req, req.MINUTES_EXPIRY)
+        db.session.add(req)
+        db.session.commit()
+        logger.info('stash load request %s created', req.token)
+    else:
+        logger.warning('stash for email %s does not exist, load request %s not created', email, req.token)
+    return jsonify(dict(token=req.token))
 
-@stash_bp.route('/load_confirm')
-#@userstash_blueprint.route('/load_confirm')
-def stash_load_confirm(load_token):
-    return 'this is stash load confirm'
+@stash_bp.route('/load_check/<token>')
+def stash_load_check(token=None):
+    confirmed = False
+    key = None
+    iv = None
+    cyphertext = None
+    question = None
+    req = UserStashRequest.from_token(db.session, token)
+    if req:
+        confirmed = req.loaded_stash is not None
+        if confirmed:
+            key = req.loaded_stash.key
+            iv = req.loaded_stash.iv
+            cyphertext = req.loaded_stash.cyphertext
+            question = req.loaded_stash.question
+    return jsonify(dict(confirmed=confirmed, key=key, iv=iv, cyphertext=cyphertext, question=question))
 
-@app.route('/test1')
-def test1():
-    #userstash_result = UserStash.query.all()
-    #seed_words = Seeds.query.filter_by(user_id = current_user.id).first()
-    #userstash_result = UserStash.query.filter(UserStash.email == 'eoliveros@redratclothing.co.nz').first()
-    #seeds = session.query(Seeds).filter(Seeds.user_id == user.id).all()
-    #userstash_result = db.session.query(UserStash).filter(UserStash.id == 'eoliveros@redratclothing.co.nz')
-    #userstash_result = UserStash.query.all()
-    #if userstash_result:
-    #    return userstash_result
-    #return 'Not found'
-    #return UserStash.query.filter(UserStash.email == 'eoliveros@redratclothing.co.nz').first()
-    userstash_result = UserStash.query.filter(UserStash.email=='eoliveros@redratclothing.co.nz').first()
-    return userstash_result.email
-
-## wave specific config settings
-#NODE_BASE_URL = app.config["NODE_BASE_URL"]
-#SEED = app.config["WALLET_SEED"]
-#ADDRESS = app.config["WALLET_ADDRESS"]
-#ASSET_ID = app.config["ASSET_ID"]
-#ASSET_NAME = app.config["ASSET_NAME"]
-#TESTNET = app.config["TESTNET"]
-#TX_SIGNERS = app.config["TX_SIGNERS"]
-#ASSET_MASTER_PUBKEY = app.config["ASSET_MASTER_PUBKEY"]
-#
-##
-## Jinja2 filters
-##
-#
-#@app.context_processor
-#def inject_config_qrcode_svg():
-#    url_parts = urlparse(request.url)
-#    url = url_parts._replace(scheme="premiomwlink", path="/config").geturl()
-#    qrcode_svg = utils.qrcode_svg_create(url, box_size=6)
-#    return dict(mw_config_url=url, mw_config_qrcode_svg=qrcode_svg)
-#
-##
-## Flask views
-##
-#
-#@app.route("/config")
-#def config():
-#    return jsonify(dict(asset_id=ASSET_ID, asset_name=ASSET_NAME, testnet=TESTNET, tx_signers=TX_SIGNERS, tx_types=tx_utils.TYPES))
-#
-#@app.route("/tx_link/<txid>")
-#def tx_link(txid):
-#    url_parts = urlparse(request.url)
-#    url = url_parts._replace(scheme="premiomwlink", path="/txid/" + txid).geturl()
-#    qrcode_svg = utils.qrcode_svg_create(url)
-#    return render_template("mw/tx_link.html", qrcode_svg=qrcode_svg, url=url)
-#
-#@app.route("/tx_create", methods=["POST"])
-#def tx_create():
-#    tx_utils.tx_init_chain_id(TESTNET)
-#
-#    content = request.get_json(force=True)
-#    if content is None:
-#        return bad_request("failed to decode JSON object")
-#    params, err_response = get_json_params(content, ["type", "timestamp"])
-#    if err_response:
-#        return err_response
-#    type_, timestamp = params
-#    if not type_ in tx_utils.TYPES:
-#        return bad_request("'type' not valid")
-#    pubkey = ASSET_MASTER_PUBKEY
-#    address = tx_utils.generate_address(pubkey)
-#    amount = 0
-#    if type_ == "transfer":
-#        fee = tx_utils.get_fee(NODE_BASE_URL, tx_utils.DEFAULT_TX_FEE, address, None)
-#        params, err_response = get_json_params(content, ["recipient", "amount"])
-#        if err_response:
-#            return err_response
-#        recipient, amount = params
-#        tx = tx_utils.transfer_asset_payload(address, pubkey, None, recipient, ASSET_ID, amount, "", None, fee, timestamp)
-#    elif type_ == "issue":
-#        fee = tx_utils.get_fee(NODE_BASE_URL, tx_utils.DEFAULT_ASSET_FEE, address, None)
-#        params, err_response = get_json_params(content, ["asset_name", "asset_description", "amount"])
-#        if err_response:
-#            return err_response
-#        asset_name, asset_description, amount = params
-#        tx = tx_utils.issue_asset_payload(address, pubkey, None, asset_name, asset_description, amount, None, 2, True, fee, timestamp)
-#    elif type_ == "reissue":
-#        fee = tx_utils.get_fee(NODE_BASE_URL, tx_utils.DEFAULT_ASSET_FEE, address, None)
-#        params, err_response = get_json_params(content, ["amount"])
-#        if err_response:
-#            return err_response
-#        amount, = params
-#        tx = tx_utils.reissue_asset_payload(address, pubkey, None, ASSET_ID, amount, True, fee, timestamp)
-#    elif type_ == "sponsor":
-#        fee = tx_utils.get_fee(NODE_BASE_URL, tx_utils.DEFAULT_SPONSOR_FEE, address, None)
-#        params, err_response = get_json_params(content, ["asset_fee"])
-#        if err_response:
-#            return err_response
-#        asset_fee, = params
-#        amount = asset_fee
-#        tx = tx_utils.sponsor_payload(address, pubkey, None, ASSET_ID, asset_fee, fee, timestamp)
-#    elif type_ == "setscript":
-#        fee = tx_utils.get_fee(NODE_BASE_URL, tx_utils.DEFAULT_SCRIPT_FEE, address, None)
-#        params, err_response = get_json_params(content, ["script"])
-#        if err_response:
-#            return err_response
-#        script, = params
-#        tx = tx_utils.set_script_payload(address, pubkey, None, script, fee, timestamp)
-#    else:
-#        return bad_request("invalid type")
-#
-#    txid = tx_utils.tx_to_txid(tx)
-#    dbtx = WavesTx.from_txid(db.session, txid)
-#    if dbtx:
-#        return bad_request("txid already exists")
-#    dbtx = WavesTx(txid, type, tx_utils.CTX_CREATED, amount, False, json.dumps(tx))
-#    db.session.add(dbtx)
-#    db.session.commit()
-#    return jsonify(dict(txid=txid, state=tx_utils.CTX_CREATED, tx=tx))
-#
-#@app.route("/tx_status", methods=["POST"])
-#def tx_status():
-#    content = request.get_json(force=True)
-#    if content is None:
-#        return bad_request("failed to decode JSON object")
-#    params, err_response = get_json_params(content, ["txid"])
-#    if err_response:
-#        return err_response
-#    txid, = params
-#    dbtx = WavesTx.from_txid(db.session, txid)
-#    if not dbtx:
-#        return bad_request('tx not found', 404)
-#    tx = dbtx.tx_with_sigs()
-#    return jsonify(dict(txid=txid, state=dbtx.state, tx=tx))
-#
-#@app.route("/tx_serialize", methods=["POST"])
-#def tx_serialize():
-#    content = request.get_json(force=True)
-#    if content is None:
-#        return bad_request("failed to decode JSON object")
-#    params, err_response = get_json_params(content, ["tx"])
-#    if err_response:
-#        return err_response
-#    tx, = params
-#    if not "type" in tx:
-#        return bad_request("tx does not contain 'type' field")
-#    tx_serialized = tx_utils.tx_serialize(tx)
-#    res = {"bytes": base64.b64encode(tx_serialized).decode("utf-8", "ignore")}
-#    return jsonify(res)
-#
-#@app.route("/tx_signature", methods=["POST"])
-#def tx_signature():
-#    content = request.get_json(force=True)
-#    if content is None:
-#        return bad_request("failed to decode JSON object")
-#    params, err_response = get_json_params(content, ["txid", "signer_index", "signature"])
-#    if err_response:
-#        return err_response
-#    txid, signer_index, signature = params
-#    dbtx = WavesTx.from_txid(db.session, txid)
-#    if not dbtx:
-#        return bad_request('tx not found', 404)
-#    logger.info(":: adding sig to tx - %s, %d, %s", txid, signer_index, signature)
-#    sig = WavesTxSig(dbtx, signer_index, signature)
-#    db.session.add(sig)
-#    db.session.commit()
-#    tx = dbtx.tx_with_sigs()
-#    return jsonify(dict(txid=txid, state=dbtx.state, tx=tx))
-#
-#@app.route("/tx_broadcast", methods=["POST"])
-#def tx_broadcast():
-#    content = request.get_json(force=True)
-#    if content is None:
-#        return bad_request("failed to decode JSON object")
-#    params, err_response = get_json_params(content, ["txid"])
-#    if err_response:
-#        return err_response
-#    txid, = params
-#    dbtx = WavesTx.from_txid(db.session, txid)
-#    if not dbtx:
-#        return bad_request('tx not found', 404)
-#    tx = dbtx.tx_with_sigs()
-#    error = ""
-#    # broadcast transaction
-#    try:
-#        dbtx = tx_utils.broadcast_transaction(db.session, dbtx.txid)
-#        db.session.add(dbtx)
-#        db.session.commit()
-#    except OtherError as ex:
-#        error = ex.message
-#        if hasattr(ex, 'data'):
-#            error = "{} - {}".format(ex.message, ex.data)
-#    return jsonify(dict(txid=txid, state=dbtx.state, tx=tx, error=error))
+@stash_bp.route('/load_confirm/<token>/<secret>', methods=['GET', 'POST'])
+def stash_load_confirm(token=None, secret=None):
+    req = UserStashRequest.from_token(db.session, token)
+    if not req:
+        logger.warning('stash request %s not found', token)
+        time.sleep(5)
+        flash('STASH request not found.', 'danger')
+        return redirect('/')
+    now = datetime.datetime.now()
+    if now > req.expiry:
+        time.sleep(5)
+        flash('STASH request expired.', 'danger')
+        return redirect('/')
+    if req.secret != secret:
+        flash('STASH code invaid.', 'danger')
+        return redirect('/')
+    if req.action != req.ACTION_LOAD:
+        flash('STASH action invaid.', 'danger')
+        return redirect('/')
+    if request.method == 'POST':
+        confirm = request.form.get('confirm') == 'true'
+        if not confirm:
+            db.session.delete(req)
+            db.session.commit()
+            flash('STASH cancelled.', 'success')
+            return redirect('/')
+        stash = UserStash.from_email_hash(db.session, req.key, req.email_hash)
+        req.loaded_stash = stash
+        db.session.add(req)
+        db.session.commit()
+        flash('STASH confirmed.', 'success')
+        return redirect('/')
+    return render_template('stash/stash_load_confirm.html', req=req)
