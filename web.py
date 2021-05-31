@@ -398,6 +398,7 @@ def dashboard():
 @app.route("/push_notifications", methods=["GET", "POST"])
 @roles_accepted(Role.ROLE_ADMIN)
 def push_notifications():
+    registration_token = ''
     if request.method == "POST":
         title = request.form["title"]
         body = request.form["body"]
@@ -412,7 +413,7 @@ def push_notifications():
         except Exception as e: # pylint: disable=broad-except
             flash("{}".format(str(e.args[0])), "danger")
     topics = Topic.topic_list(db.session)
-    return render_template("push_notifications.html", topics=topics)
+    return render_template("push_notifications.html", topics=topics, registration_token=registration_token)
 
 @app.route("/push_notifications_register", methods=["POST"])
 def push_notifications_register():

@@ -1007,6 +1007,10 @@ class Topic(db.Model):
     def topic_list(cls, session):
         return [row.topic for row in session.query(cls.topic)]
 
+    @classmethod
+    def from_name(cls, session, name):
+        return session.query(cls).filter(cls.topic == name).first()
+
     def __repr__(self):
         return '<Topic %r %r>' % self.topic
 
