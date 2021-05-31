@@ -107,6 +107,7 @@ def req2(endpoint, params=None, api_key_token=None, api_key_secret=None):
         params["nonce"] = int(time.time())
         params["api_key"] = api_key_token
     url = URL_BASE + endpoint
+    print(params)
     if params:
         headers = {"Content-type": "application/json"}
         body = json.dumps(params)
@@ -216,7 +217,7 @@ def stash_load(args):
     #email_hash = sha256(args.email)
     r = stash_get("load", {"email": args.email, "key": args.key})
     #check_request_status(r)
-    print(r)
+    print(r.text)
 
 def run_parser():
     # parse arguments
