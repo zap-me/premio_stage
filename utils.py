@@ -47,7 +47,7 @@ def email_user_create_request(logger, req, minutes_expiry):
     send_email(logger, "Confirm your registration", msg, req.email)
 
 def email_api_key_request(logger, req, minutes_expiry):
-    url = url_for("paydb.api_key_confirm", token=req.token, secret=req.secret, _external=True)
+    url = url_for("paydb.api_key_confirm", token=req.token, secret=req.key, _external=True)
     msg = f"You have a pending api key request waiting!<br/><br/>Confirm your registration <a href='{url}'>here</a><br/><br/>Confirm within {minutes_expiry} minutes"
     send_email(logger, "Confirm your api key request", msg, req.user.email)
 

@@ -107,7 +107,6 @@ def req2(endpoint, params=None, api_key_token=None, api_key_secret=None):
         params["nonce"] = int(time.time())
         params["api_key"] = api_key_token
     url = URL_BASE + endpoint
-    print(params)
     if params:
         headers = {"Content-type": "application/json"}
         body = json.dumps(params)
@@ -116,27 +115,10 @@ def req2(endpoint, params=None, api_key_token=None, api_key_secret=None):
         
         email = params["email"]
         key = params["key"]
-        payload = {'email': email, 'key': key}
-        print('::')
-        print('::')
-        print('::')
-        print('::')
-        print(email)
-        print(key)
-        #payload = {'email': email, 'key': key}
-        r = requests.get(url, params=payload)
-        print(r)
-#        print("   POST - " + url)
-#        r = requests.post(url, headers=headers, data=body)
-#    else:
-#        print("   GET - " + url)
-#        r = requests.get(url)
-#    print("   GET - " + url)
-#    r = requests.get(url)
-#    return r
-#    url = URL_BASE + endpoint
-#    r = requests.get(url)
-    return url
+        email_hash = sha256(email)
+
+    r = requests.get(url+"/"+email+"/"+key)
+    return r.text
 
 def paydb_req(endpoint, params=None, api_key_token=None, api_key_secret=None):
     return req('paydb/' + endpoint, params, api_key_token, api_key_secret)
@@ -231,8 +213,8 @@ def stash_save_check(args):
 
 def stash_load(args):
     print(":: calling load..")
-    email_hash = sha256(args.email)
-    r = stash_get("load", {"email": email_hash, "key": args.key})
+    #email_hash = sha256(args.email)
+    r = stash_get("load", {"email": args.email, "key": args.key})
     #check_request_status(r)
     print(r)
 

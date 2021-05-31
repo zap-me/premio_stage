@@ -72,24 +72,34 @@ def stash_save_confirm(token=None, secret=None):
         return redirect('/')
     return render_template('stash/stash_confirm.html', req=req)
 
-@stash_bp.route('/load')
+@stash_bp.route('/load/<email>/<key>', methods=['GET', 'POST'])
 def stash_load(email, key):
-    SERVER_NAME = app.config["SERVER_NAME"]
+    ### create hash for the email
     email_hash = utils.sha256(email)
-    stash_req = db.session.query(UserStashRequest).\
+    ### check the email_hash and key is the same in the db.
+    req = db.session.query(UserStashRequest).\
         filter(UserStashRequest.email_hash == str(email_hash)).\
         filter(UserStashRequest.key == key).first()
-    if stash_req:
-        ### send email but its erroring
-        #utils.email_stash_loadrequest(logger, email, stash_req, stash_req.MINUTES_EXPIRY)
-        #print(stash_req.token, stash_req.secret)
-        return stash_req
-    return False
+    if not req:
+        flash('STASH email and key not found.', 'danger')
+        return redirect('/')
+    ### send email but its erroring#
+    utils.email_stash_loadrequest(logger, email, req, req.MINUTES_EXPIRY)
+    ### return the req
+    flash('STASH email and key found', 'success')
+    #return render_template('stash/stash_load.html', req=req)
+    return redirect('/')
 
 @stash_bp.route('/load_confirm/<token>/<secret>', methods=['GET', 'POST'])
-def stash_load_confirm(load_token):
-    return render_template('stash/test.html')
+def stash_load_confirm(token, secret):
+    req = db.session.query(UserStashRequest).\
+        filter(UserStashRequest.token == str(token)).first()
+    if not req:
+        flash('STASH token not exist.', 'danger')
+        return redirect('/')
+    return render_template('stash/stash_load_confirm.html', req=req)
 
+### This testappears to work
 @app.route('/test1')
 def test1():
     #userstash_result = UserStash.query.all()
@@ -102,9 +112,14 @@ def test1():
     #    return userstash_result
     #return 'Not found'
     #return UserStash.query.filter(UserStash.email == 'eoliveros@redratclothing.co.nz').first()
-    userstash_result = UserStash.query.filter(UserStash.email=='eoliveros@redratclothing.co.nz').first()
-    return userstash_result.email
-
+    email_hash = utils.sha256('e.f.oliveros@gmail.com')
+    print(email_hash)
+    userstashrequest_result = UserStashRequest.query.filter(UserStashRequest.email_hash == email_hash).first()
+    if not userstashrequest_result:
+        flash('STASH email not found', 'danger')
+        return redirect('/')
+    return render_template('stash/test.html')
+    
 ## wave specific config settings
 #NODE_BASE_URL = app.config["NODE_BASE_URL"]
 #SEED = app.config["WALLET_SEED"]
