@@ -8,7 +8,7 @@
         <div class="card">
             <div class="card-body">
                 <h5 class="card-title">Send to topic</h5>
-                <form method="POST">
+                <form id="topic-form" method="POST">
                     <input type="hidden" id="type" name="type" value="topic" />
                     <div class="form-group">
                         <label for="topic">Topic</label>
@@ -38,7 +38,7 @@
                         <textarea type="text" class="form-control" id="html" name="html" aria-describedby="htmlHelp" rows="3">{{html}}</textarea>
                         <small id="htmlHelp" class="form-text text-muted">The push notication HTML data (optional).</small>
                     </div>
-                    <button type="submit" class="btn btn-primary">Send</button>
+                    <button id="topic-form-submit" type="submit" class="btn btn-primary">Send</button>
                 </form>
             </div>
         </div>
@@ -84,4 +84,31 @@
     </div>
 
 {% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        $('#topic-form-submit').click(function() {
+            bootbox.confirm({
+                message: "Are you sure you want to send a push notification to all devices subscribed to the topic?",
+                buttons: {
+                    confirm: {
+                        label: 'Yes',
+                        className: 'btn-success'
+                    },
+                    cancel: {
+                        label: 'No',
+                        className: 'btn-danger'
+                    }
+                },
+                callback: function (result) {
+                    if (result)
+                        $('#topic-form').submit();
+                }
+            });
+            return false;
+        });
+    });
+</script>
 {% endblock %}
