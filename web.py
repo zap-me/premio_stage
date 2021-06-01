@@ -398,23 +398,28 @@ def dashboard():
 @app.route("/push_notifications", methods=["GET", "POST"])
 @roles_accepted(Role.ROLE_ADMIN)
 def push_notifications():
+    title = ''
+    body = ''
+    image = ''
+    html = ''
     registration_token = ''
     if request.method == "POST":
         title = request.form["title"]
         body = request.form["body"]
         image = request.form["image"]
+        html = request.form["html"]
         try:
             if request.form["type"] == "topic":
                 topic = request.form["topic"]
-                fcm.send_to_topic(topic, title, body, image)
+                fcm.send_to_topic(topic, title, body, image, html)
             else:
                 registration_token = request.form["registration_token"]
-                fcm.send_to_token(registration_token, title, body, image)
+                fcm.send_to_token(registration_token, title, body, image, html)
             flash("sent push notification", "success")
         except Exception as e: # pylint: disable=broad-except
             flash("{}".format(str(e.args[0])), "danger")
     topics = Topic.topic_list(db.session)
-    return render_template("push_notifications.html", topics=topics, registration_token=registration_token)
+    return render_template("push_notifications.html", topics=topics, title=title, body=body, image=image, html=html, registration_token=registration_token)
 
 @app.route("/push_notifications_register", methods=["POST"])
 def push_notifications_register():
