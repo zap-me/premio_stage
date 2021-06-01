@@ -402,13 +402,14 @@ def push_notifications():
     if request.method == "POST":
         title = request.form["title"]
         body = request.form["body"]
+        image = request.form["image"]
         try:
             if request.form["type"] == "topic":
                 topic = request.form["topic"]
-                fcm.send_to_topic(topic, title, body)
+                fcm.send_to_topic(topic, title, body, image)
             else:
                 registration_token = request.form["registration_token"]
-                fcm.send_to_token(registration_token, title, body)
+                fcm.send_to_token(registration_token, title, body, image)
             flash("sent push notification", "success")
         except Exception as e: # pylint: disable=broad-except
             flash("{}".format(str(e.args[0])), "danger")

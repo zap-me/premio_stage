@@ -28,16 +28,16 @@ class FCM:
         self.default_app = firebase_admin.initialize_app(cred)
         logger.info('loading firebase creds')
 
-    def send_to_token(self, registration_token, title, body):
+    def send_to_token(self, registration_token, title, body, image):
         message = messaging.Message(
-            notification=messaging.Notification(title=title, body=body),
+            notification=messaging.Notification(title=title, body=body, image=image),
             token=registration_token,
         )
         messaging.send(message)
 
-    def send_to_topic(self, topic, title, body):
+    def send_to_topic(self, topic, title, body, image):
         message = messaging.Message(
-            notification=messaging.Notification(title=title, body=body),
+            notification=messaging.Notification(title=title, body=body, image=image),
             topic=topic,
         )
         messaging.send(message)
