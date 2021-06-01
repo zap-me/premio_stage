@@ -79,6 +79,10 @@ def construct_parser():
     parser_stash_load = subparsers.add_parser("stash_load", help="Load a user stash")
     parser_stash_load.add_argument("email", metavar="EMAIL", type=str, help="The email address to load")
     parser_stash_load.add_argument("key", metavar="KEY", type=str, help="The name of the stash")
+
+    parser_stash_load_check = subparsers.add_parser("stash_load_check", help="Check with load user stash")
+    parser_stash_load_check.add_argument("email", metavar="EMAIL", type=str, help="The email address to load")
+    parser_stash_load_check.add_argument("key", metavar="KEY", type=str, help="Load key stash")
     return parser
 
 def req(endpoint, params=None, api_key_token=None, api_key_secret=None):
@@ -100,7 +104,7 @@ def req(endpoint, params=None, api_key_token=None, api_key_secret=None):
         r = requests.get(url)
     return r
 
-def req2(endpoint, params=None, api_key_token=None, api_key_secret=None):
+def get_req(endpoint, params=None, api_key_token=None, api_key_secret=None):
     if api_key_token:
         if not params:
             params = {}
@@ -113,13 +117,12 @@ def req2(endpoint, params=None, api_key_token=None, api_key_secret=None):
         body = json.dumps(params)
         if api_key_token:
             headers["X-Signature"] = create_hmac_sig(api_key_secret, body)
-        
         email = params["email"]
         key = params["key"]
         email_hash = sha256(email)
-
+    ### is the consumer app using email_hash or email???
     r = requests.get(url+"/"+email+"/"+key)
-    return r.text
+    return r
 
 def paydb_req(endpoint, params=None, api_key_token=None, api_key_secret=None):
     return req('paydb/' + endpoint, params, api_key_token, api_key_secret)
@@ -128,7 +131,7 @@ def stash_req(endpoint, params=None):
     return req('stash/' + endpoint, params)
 
 def stash_get(endpoint, params=None):
-    return req2('stash/' + endpoint, params)
+    return get_req('stash/' + endpoint, params)
 
 def check_request_status(r):
     try:
@@ -212,11 +215,11 @@ def stash_save_check(args):
     check_request_status(r)
     print(r.text)
 
-def stash_load(args):
-    print(":: calling load..")
+def stash_load_check(args):
+    print(":: calling load_check..")
     #email_hash = sha256(args.email)
-    r = stash_get("load", {"email": args.email, "key": args.key})
-    #check_request_status(r)
+    r = stash_get("load_check", {"email": args.email, "key": args.key})
+    check_request_status(r)
     print(r.text)
 
 def run_parser():
@@ -242,8 +245,8 @@ def run_parser():
         function = stash_save
     elif args.command == "stash_save_check":
         function = stash_save_check
-    elif args.command == "stash_load":
-        function = stash_load
+    elif args.command == "stash_load_check":
+        function = stash_load_check
     else:
         parser.print_help()
         sys.exit(EXIT_NO_COMMAND)

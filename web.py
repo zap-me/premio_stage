@@ -27,6 +27,7 @@ from web_utils import bad_request, get_json_params, request_get_signature, check
 import paydb_core
 # pylint: disable=unused-import
 import admin
+from stash_endpoint import stash_bp
 
 #jsonrpc = JSONRPC(app, "/api")
 logger = logging.getLogger(__name__)
@@ -52,8 +53,8 @@ elif SERVER_MODE == SERVER_MODE_PAYDB:
     # paydb blueprint
     from paydb_endpoint import paydb
     app.register_blueprint(paydb, url_prefix='/paydb')
-# stash blueprint
-from stash_endpoint import stash_bp
+## stash blueprint
+#from stash_endpoint import stash_bp
 app.register_blueprint(stash_bp, url_prefix='/stash')
 
 def logger_setup(level, handler):

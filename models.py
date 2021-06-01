@@ -4,6 +4,8 @@
 # pylint: disable=too-few-public-methods
 # pylint: disable=too-many-locals
 # pylint: disable=too-many-lines
+# pylint: disable=invalid-name
+# pylint: disable=assigning-non-slot
 
 import time
 import datetime
@@ -1063,6 +1065,10 @@ class UserStash(db.Model):
         self.IV = stash_request.IV
         self.cyphertext = stash_request.cyphertext
         self.question = stash_request.question
+
+    @classmethod
+    def from_email_hash(cls, session, email_hash, key):
+        return session.query(cls).filter(cls.email_hash == email_hash).filter(cls.key == key).first()
 
 class UserStashRequest(db.Model):
     MINUTES_EXPIRY = 30

@@ -8,11 +8,15 @@
             <div class="card-body">
                 <h5 class="card-title">STASH Load Confirm</h5>
                 <form method="POST">
-                    <h6>Load Confirm</h6>
-		    <span>mnemonic seed???</span>
+                    <h5>Load Confirm</h5>
+		    <h6>key:  {{req.key}}</h6>
+		    <h6>email_hash:  {{req.email_hash}}</h6>
+		    <h6>IV:  {{req.IV}}</h6>
+		    <h6>cypherterxt:  {{req.cyphertext}}</h6>
+		    <h6>question:  {{req.question}}</h6>
                     <br>
                     <br>
-                    <button type="submit" class="btn btn-primary" name="confirm" value="true">Load STASH</button>
+                    <button type="submit" class="btn btn-primary" name="confirm" value="true">Confirm config</button>
                     <button type="submit" class="btn btn-primary" name="confirm" value="false">Cancel</button>
                 </form>
             </div>
