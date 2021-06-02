@@ -1108,3 +1108,28 @@ class UserStashRequest(db.Model):
     @classmethod
     def from_token(cls, session, token):
         return session.query(cls).filter(cls.token == token).first()
+
+class PushNotificationLocation(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    fcm_registration_token = db.Column(db.String, nullable=False)
+    latitude = db.Column(db.Float, nullable=False)
+    longitude = db.Column(db.Float, nullable=False)
+    date = db.Column(db.DateTime(), nullable=False)
+
+    def __init__(self, registration_token, latitude, longitude):
+        self.fcm_registration_token = registration_token
+        self.update(latitude, longitude)
+
+    def update(self, latitude, longitude):
+        self.latitude = latitude
+        self.longitude = longitude
+        self.date = datetime.datetime.now()
+
+    @classmethod
+    def from_token(cls, session, token):
+        return session.query(cls).filter(cls.fcm_registration_token == token).first()
+
+    @classmethod
+    def tokens_at_location(cls, session, latitude, max_lat_delta, longitude, max_long_delta, max_age_minutes):
+        since = datetime.datetime.now() - datetime.timedelta(minutes=max_age_minutes)
+        return session.query(cls).filter(and_(cls.date >= since, and_(and_(cls.latitude <= latitude + max_lat_delta, cls.latitude >= latitude - max_lat_delta), and_(cls.longitude <= longitude + max_long_delta, cls.longitude >= longitude - max_long_delta)))).all()

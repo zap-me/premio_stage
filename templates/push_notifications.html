@@ -3,20 +3,38 @@
 {% block content %}
 {% if current_user.is_authenticated %}
     <div class="row justify-content-center">
-    <div class="col-sm-6">
+    <div class="col-sm-10">
 
         <div class="card">
             <div class="card-body">
-                <h5 class="card-title">Send to topic</h5>
-                <form id="topic-form" method="POST">
-                    <input type="hidden" id="type" name="type" value="topic" />
+                <h5 class="card-title">Send to topic/location</h5>
+                <form id="general-form" method="POST">
                     <div class="form-group">
-                        <label for="topic">Topic</label>
-                        <select class="form-control" id="topic" name="topic">
-                            {% for topic in topics %}
-                            <option value="{{topic}}">{{topic}}</option>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="type" id="type-topic" value="topic" {% if type_ == 'topic' or not type_ %}checked{% endif %} >
+                            <label class="form-check-label" for="type-topic">Topic</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="type" id="type-location" value="location" {% if type_ == 'location' %}checked{% endif %}>
+                            <label class="form-check-label" for="type-location">Location</label>
+                        </div>
+                    </div>
+                    <div class="form-group" id="topic-group">
+                        <select class="form-control" id="topic" name="topic" aria-describedby="topicHelp">
+                            {% for t in topics %}
+                            <option {% if topic == t %}selected{% endif %} value="{{t}}">{{t}}</option>
                             {% endfor %}
                         </select>
+                        <small id="topicHelp" class="form-text text-muted">The push notification topic</small>
+                    </div>
+                    <div class="form-group" id="location-group">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="location" name="location" aria-describedby="locationHelp" value="{{location}}">
+                            <div class="input-group-append">
+                                <button id="location-btn" class="btn btn-primary"><i class="fas fa-location-arrow"></i></button>
+                            </div>
+                        </div>
+                        <small id="locationHelp" class="form-text text-muted">Target location for push notification. Format like: <pre>&lt;LATITUDE&gt;, &lt;LONGITUDE&gt;, &lt;MAX_DISTANCE_IN_METERS&gt;, &lt;MAX_AGE_IN_MINUTES&gt;</pre></small>
                     </div>
                     <div class="form-group">
                         <label for="title">Title</label>
@@ -38,7 +56,7 @@
                         <textarea type="text" class="form-control" id="html" name="html" aria-describedby="htmlHelp" rows="3">{{html}}</textarea>
                         <small id="htmlHelp" class="form-text text-muted">The push notication HTML data (optional).</small>
                     </div>
-                    <button id="topic-form-submit" type="submit" class="btn btn-primary">Send</button>
+                    <button id="general-form-submit" type="submit" class="btn btn-primary">Send</button>
                 </form>
             </div>
         </div>
@@ -88,10 +106,42 @@
 
 {% block scripts %}
 <script>
+    var deviceClass = '';
+
+    function showTopicLocation(type) {
+        if (type == 'location') {
+            $('#topic-group').hide();
+            $('#location-group').show();
+            deviceClass = 'devices at the location'
+        }
+        else {
+            $('#topic-group').show();
+            $('#location-group').hide();
+            deviceClass = 'devices subscribed to the topic'
+        }
+    }
+
     $(document).ready(function() {
-        $('#topic-form-submit').click(function() {
+        showTopicLocation('{{type_}}');
+        $('input[type=radio][name=type]').change(function() {
+            showTopicLocation(this.value);
+        });
+        $('#location-btn').click(function() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    latitude = position.coords.latitude;
+                    longitude = position.coords.longitude;
+                    console.log(`${latitude}, ${longitude}`);
+                    $('#location').val(`${latitude}, ${longitude}, <MAX_DISTANCE_IN_METERS>, <MAX_AGE_IN_MINUTES>`);
+                }, function() {
+                    console.log("geolocation error'd");
+                });
+            }
+            return false;
+        });
+        $('#general-form-submit').click(function() {
             bootbox.confirm({
-                message: "Are you sure you want to send a push notification to all devices subscribed to the topic?",
+                message: `Are you sure you want to send a push notification to all ${deviceClass}?`,
                 buttons: {
                     confirm: {
                         label: 'Yes',
@@ -104,7 +154,7 @@
                 },
                 callback: function (result) {
                     if (result)
-                        $('#topic-form').submit();
+                        $('#general-form').submit();
                 }
             });
             return false;
