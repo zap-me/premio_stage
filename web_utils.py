@@ -42,10 +42,9 @@ def get_json_params(json_content, param_names):
 def get_json_params_optional(json_content, param_names):
     param_values = []
     for param in param_names:
-        param_name = param
         try:
             param_values.append(json_content[param])
-        except Exception as e: # pylint: disable=broad-except
+        except Exception: # pylint: disable=broad-except
             param_values.append(None)
     return param_values
 

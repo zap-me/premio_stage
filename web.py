@@ -397,9 +397,9 @@ def dashboard():
     return render_template("dashboard_paydb.html", data=data)
 
 # https://gis.stackexchange.com/a/2964
-def meters_to_lat_lon_displacement(m, origin_latitude):
-    lat = m / 111111
-    lon = m / (111111 * math.cos(math.radians(origin_latitude)))
+def meters_to_lat_lon_displacement(meters, origin_latitude):
+    lat = meters / 111111
+    lon = meters / (111111 * math.cos(math.radians(origin_latitude)))
     return lat, lon
 
 @app.route("/push_notifications", methods=["GET", "POST"])
@@ -443,7 +443,7 @@ def push_notifications():
             else:
                 registration_token = request.form["registration_token"]
                 fcm.send_to_tokens([registration_token], title, body, image, html)
-                flash(f"sent push notification)", "success")
+                flash("sent push notification)", "success")
         except Exception as e: # pylint: disable=broad-except
             flash("{}".format(str(e.args[0])), "danger")
     topics = Topic.topic_list(db.session)
