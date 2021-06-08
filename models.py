@@ -1133,3 +1133,21 @@ class PushNotificationLocation(db.Model):
     def tokens_at_location(cls, session, latitude, max_lat_delta, longitude, max_long_delta, max_age_minutes):
         since = datetime.datetime.now() - datetime.timedelta(minutes=max_age_minutes)
         return session.query(cls).filter(and_(cls.date >= since, and_(and_(cls.latitude <= latitude + max_lat_delta, cls.latitude >= latitude - max_lat_delta), and_(cls.longitude <= longitude + max_long_delta, cls.longitude >= longitude - max_long_delta)))).all()
+
+class PushNotificationLocationModelView(RestrictedModelView):
+    can_create = False
+    can_delete = False
+    can_edit = False
+
+    def _format_location(view, context, model, name):
+        lat = model.latitude
+        lon = model.longitude
+
+        # pylint: disable=duplicate-string-formatting-argument
+        html = '''
+        <a href="http://www.google.com/maps/place/{},{}">{}, {}</a>
+        '''.format(lat, lon, lat, lon)
+        return Markup(html)
+
+    column_list = ['date', 'location', 'fcm_registration_token']
+    column_formatters = {'location': _format_location}

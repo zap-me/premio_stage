@@ -443,7 +443,7 @@ def push_notifications():
             else:
                 registration_token = request.form["registration_token"]
                 fcm.send_to_tokens([registration_token], title, body, image, html)
-                flash("sent push notification)", "success")
+                flash("sent push notification", "success")
         except Exception as e: # pylint: disable=broad-except
             flash("{}".format(str(e.args[0])), "danger")
     topics = Topic.topic_list(db.session)
