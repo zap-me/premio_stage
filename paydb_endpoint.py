@@ -82,7 +82,7 @@ def user_register():
         return bad_request(web_utils.INVALID_EMAIL)
     if not password:
         return bad_request(web_utils.EMPTY_PASSWORD)
-    if len(photo) > 50000:
+    if photo and len(photo) > 50000:
         return bad_request(web_utils.PHOTO_DATA_LARGE)
     req = UserCreateRequest(first_name, last_name, email, photo, photo_type, encrypt_password(password))
     user = User.from_email(db.session, email)
@@ -182,12 +182,15 @@ def api_key_claim():
     db.session.commit()
     return jsonify(dict(token=api_key.token, secret=api_key.secret, device_name=api_key.device_name, expiry=api_key.expiry))
 
-@paydb.route('/api_key_confirm/<token>', methods=['GET', 'POST'])
-def api_key_confirm(token=None):
+@paydb.route('/api_key_confirm/<token>/<secret>', methods=['GET', 'POST'])
+def api_key_confirm(token=None, secret=None):
     req = ApiKeyRequest.from_token(db.session, token)
     if not req:
         time.sleep(5)
         flash('API KEY request not found.', 'danger')
+        return redirect('/')
+    if req.secret != secret:
+        flash('API KEY code invalid.', 'danger')
         return redirect('/')
     now = datetime.datetime.now()
     if now > req.expiry:

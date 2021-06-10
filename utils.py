@@ -2,6 +2,7 @@ import os
 import binascii
 import re
 import io
+import hashlib
 
 import pywaves
 from sendgrid import SendGridAPIClient
@@ -36,13 +37,17 @@ def email_payment_claim(logger, asset_name, payment, hours_expiry):
     msg = f"You have a {asset_name} payment waiting!<br/><br/>Claim your payment <a href='{url}'>here</a><br/><br/>Claim within {hours_expiry} hours"
     send_email(logger, f"Claim your {asset_name} payment", msg, payment.email)
 
+def email_payment_sent(logger, asset_name, payment):
+    msg = f"You have been sent a {asset_name} payment!<br/><br/>Check your app for details"
+    send_email(logger, f"Received {asset_name} payment", msg, payment.email)
+
 def email_user_create_request(logger, req, minutes_expiry):
     url = url_for("paydb.user_registration_confirm", token=req.token, _external=True)
     msg = f"You have a pending user registration waiting!<br/><br/>Confirm your registration <a href='{url}'>here</a><br/><br/>Confirm within {minutes_expiry} minutes"
     send_email(logger, "Confirm your registration", msg, req.email)
 
 def email_api_key_request(logger, req, minutes_expiry):
-    url = url_for("paydb.api_key_confirm", token=req.token, _external=True)
+    url = url_for("paydb.api_key_confirm", token=req.token, secret=req.secret, _external=True)
     msg = f"You have a pending api key request waiting!<br/><br/>Confirm your registration <a href='{url}'>here</a><br/><br/>Confirm within {minutes_expiry} minutes"
     send_email(logger, "Confirm your api key request", msg, req.user.email)
 
@@ -77,3 +82,12 @@ def qrcode_svg_create(data, box_size=10):
     img.save(output)
     svg = output.getvalue().decode('utf-8')
     return svg
+
+def str2bytes(string):
+    # warning this method is flawed with some input
+    return string.encode("latin-1")
+
+def sha256(string):
+    data = str2bytes(string)
+    raw_hash = hashlib.sha256(data).digest()
+    return binascii.hexlify(raw_hash).decode()
