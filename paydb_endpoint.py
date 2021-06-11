@@ -243,6 +243,45 @@ def user_info():
         return jsonify(dict(email=user.email, balance=balance, photo=user.photo, photo_type=user.photo_type, roles=roles, permissions=perms))
     return jsonify(dict(email=user.email, balance=-1, photo=user.photo, photo_type=user.photo_type, roles=[], permissions=[]))
 
+@paydb.route('/user_update_email', methods=['GET', 'POST'])
+def user_update_email():
+    sig = request_get_signature()
+    content = request.get_json(force=True)
+    if content is None:
+        return bad_request(web_utils.INVALID_JSON)
+    params, err_response = get_json_params(content, ["api_key", "nonce", "email"])
+    if err_response:
+        return err_response
+    api_key, nonce, email = params
+    res, reason, api_key = check_auth(db.session, api_key, nonce, sig, request.data)
+    if not res:
+        return bad_request(reason)
+    user = api_key.user
+    user.email = email
+    db.session.add(user)
+    db.session.commit()
+    return jsonify(dict(email=user.email))
+
+@paydb.route('/user_update_photo', methods=['GET', 'POST'])
+def user_update_photo():
+    sig = request_get_signature()
+    content = request.get_json(force=True)
+    if content is None:
+        return bad_request(web_utils.INVALID_JSON)
+    params, err_response = get_json_params(content, ["api_key", "nonce", "photo", "photo_type"])
+    if err_response:
+        return err_response
+    api_key, nonce, photo, photo_type = params
+    res, reason, api_key = check_auth(db.session, api_key, nonce, sig, request.data)
+    if not res:
+        return bad_request(reason)
+    user = api_key.user
+    user.photo = photo
+    user.photo_type = photo_type
+    db.session.add(user)
+    db.session.commit()
+    return jsonify(dict(photo=user.photo, photo_type=user.photo_type))
+
 @paydb.route('/user_transactions', methods=['POST'])
 def user_transactions():
     sig = request_get_signature()
@@ -302,42 +341,3 @@ def transaction_info():
     if tx.user != api_key.user and tx.recipient != api_key.user:
         return bad_request(web_utils.UNAUTHORIZED)
     return jsonify(dict(tx=tx.to_json()))
-
-@paydb.route('/user_update_email', methods=['GET', 'POST'])
-def user_update_email():
-    sig = request_get_signature()
-    content = request.get_json(force=True)
-    if content is None:
-        return bad_request(web_utils.INVALID_JSON)
-    params, err_response = get_json_params(content, ["api_key", "nonce", "email"])
-    if err_response:
-        return err_response
-    api_key, nonce, email = params
-    res, reason, api_key = check_auth(db.session, api_key, nonce, sig, request.data)
-    if not res:
-        return bad_request(reason)
-    user = api_key.user
-    user.email = email
-    db.session.add(user)
-    db.session.commit()
-    return jsonify(dict(email=user.email))
-
-@paydb.route('/user_update_photo', methods=['GET', 'POST'])
-def user_update_photo():
-    sig = request_get_signature()
-    content = request.get_json(force=True)
-    if content is None:
-        return bad_request(web_utils.INVALID_JSON)
-    params, err_response = get_json_params(content, ["api_key", "nonce", "photo", "photo_type"])
-    if err_response:
-        return err_response
-    api_key, nonce, photo, photo_type = params
-    res, reason, api_key = check_auth(db.session, api_key, nonce, sig, request.data)
-    if not res:
-        return bad_request(reason)
-    user = api_key.user
-    user.photo = photo
-    user.photo_type = photo_type
-    db.session.add(user)
-    db.session.commit()
-    return jsonify(dict(photo=user.photo, photo_type=user.photo_type))

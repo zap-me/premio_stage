@@ -41,6 +41,17 @@ def construct_parser():
     parser_user_info.add_argument("api_key_token", metavar="API_KEY_TOKEN", type=str, help="the API KEY token")
     parser_user_info.add_argument("api_key_secret", metavar="API_KEY_SECRET", type=str, help="the API KEY secret")
 
+    parser_user_update_email = subparsers.add_parser("user_update_email", help="Update user email")
+    parser_user_update_email.add_argument("api_key_token", metavar="API_KEY_TOKEN", type=str, help="the API KEY token")
+    parser_user_update_email.add_argument("api_key_secret", metavar="API_KEY_SECRET", type=str, help="the API KEY secret")
+    parser_user_update_email.add_argument("email", metavar="EMAIL", type=str, help="the email address to change to")
+
+    parser_user_update_photo = subparsers.add_parser("user_update_photo", help="Update user photo and photo_type")
+    parser_user_update_photo.add_argument("api_key_token", metavar="API_KEY_TOKEN", type=str, help="the API KEY token")
+    parser_user_update_photo.add_argument("api_key_secret", metavar="API_KEY_SECRET", type=str, help="the API KEY secret")
+    parser_user_update_photo.add_argument("photo", metavar="PHOTO", type=str, help="user photo")
+    parser_user_update_photo.add_argument("photo_type", metavar="PHOTO_TYPE", type=str, help="type of photo")
+
     parser_transaction_create = subparsers.add_parser("transaction_create", help="Create a transaction")
     parser_transaction_create.add_argument("api_key_token", metavar="API_KEY_TOKEN", type=str, help="the API KEY token")
     parser_transaction_create.add_argument("api_key_secret", metavar="API_KEY_SECRET", type=str, help="the API KEY secret")
@@ -62,17 +73,6 @@ def construct_parser():
     parser_payment_create.add_argument("recipient", metavar="RECIPIENT", type=str, help="the recipient of the payment")
     parser_payment_create.add_argument("amount", metavar="AMOUNT", type=int, help="the payment amount (integer, cents)")
     parser_payment_create.add_argument("message", metavar="MESSAGE", type=str, help="the message for the recipient")
-
-    parser_user_update_email = subparsers.add_parser("user_update_email", help="Update user email")
-    parser_user_update_email.add_argument("api_key_token", metavar="API_KEY_TOKEN", type=str, help="the API KEY token")
-    parser_user_update_email.add_argument("api_key_secret", metavar="API_KEY_SECRET", type=str, help="the API KEY secret")
-    parser_user_update_email.add_argument("email", metavar="EMAIL", type=str, help="the email address to change to")
-
-    parser_user_update_photo = subparsers.add_parser("user_update_photo", help="Update user photo and photo_type")
-    parser_user_update_photo.add_argument("api_key_token", metavar="API_KEY_TOKEN", type=str, help="the API KEY token")
-    parser_user_update_photo.add_argument("api_key_secret", metavar="API_KEY_SECRET", type=str, help="the API KEY secret")
-    parser_user_update_photo.add_argument("photo", metavar="PHOTO", type=str, help="user photo")
-    parser_user_update_photo.add_argument("photo_type", metavar="PHOTO_TYPE", type=str, help="type of photo")
 
     parser_stash_save = subparsers.add_parser("stash_save", help="Save a user stash")
     parser_stash_save.add_argument("key", metavar="KEY", type=str, help="The name of the stash")
@@ -163,6 +163,18 @@ def user_info(args):
     check_request_status(r)
     print(r.text)
 
+def user_update_email(args):
+    print(":: calling user_update_email..")
+    r = paydb_req("user_update_email", {"email": args.email}, args.api_key_token, args.api_key_secret)
+    check_request_status(r)
+    print(r.text)
+
+def user_update_photo(args):
+    print(":: calling user_update_photo..")
+    r = paydb_req("user_update_photo", {"photo": args.photo, "photo_type": args.photo_type}, args.api_key_token, args.api_key_secret)
+    check_request_status(r)
+    print(r.text)
+
 def transaction_create(args):
     print(":: calling transaction_create..")
     r = paydb_req("transaction_create", {"action": args.action, "recipient": args.recipient, "amount": args.amount, "attachment": args.attachment}, args.api_key_token, args.api_key_secret)
@@ -178,18 +190,6 @@ def transaction_info(args):
 def payment_create(args):
     print(":: calling payment_create..")
     r = req("payment_create", {"reason": args.reason, "category": args.category, "recipient": args.recipient, "amount": args.amount, "message": args.message}, args.api_key_token, args.api_key_secret)
-    check_request_status(r)
-    print(r.text)
-
-def user_update_email(args):
-    print(":: calling user_update_email..")
-    r = paydb_req("user_update_email", {"email": args.email}, args.api_key_token, args.api_key_secret)
-    check_request_status(r)
-    print(r.text)
-
-def user_update_photo(args):
-    print(":: calling user_update_photo..")
-    r = paydb_req("user_update_photo", {"photo": args.photo, "photo_type": args.photo_type}, args.api_key_token, args.api_key_secret)
     check_request_status(r)
     print(r.text)
 
@@ -218,16 +218,16 @@ def run_parser():
         function = api_key_create
     elif args.command == "user_info":
         function = user_info
+    elif args.command == "user_update_email":
+        function = user_update_email
+    elif args.command == "user_update_photo":
+        function = user_update_photo
     elif args.command == "transaction_create":
         function = transaction_create
     elif args.command == "transaction_info":
         function = transaction_info
     elif args.command == "payment_create":
         function = payment_create
-    elif args.command == "user_update_email":
-        function = user_update_email
-    elif args.command == "user_update_photo":
-        function = user_update_photo
     elif args.command == "stash_save":
         function = stash_save
     elif args.command == "stash_save_check":
