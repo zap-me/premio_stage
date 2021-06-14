@@ -46,6 +46,11 @@ def email_user_create_request(logger, req, minutes_expiry):
     msg = f"You have a pending user registration waiting!<br/><br/>Confirm your registration <a href='{url}'>here</a><br/><br/>Confirm within {minutes_expiry} minutes"
     send_email(logger, "Confirm your registration", msg, req.email)
 
+def email_user_update_email_request(logger, req, minutes_expiry):
+    url = url_for("paydb.user_update_email_confirm", token=req.token, _external=True)
+    msg = f"You have a pending update email request waiting!<br/><br/>Confirm your new email <a href='{url}'>here</a><br/><br/>Confirm within {minutes_expiry} minutes"
+    send_email(logger, "Confirm your update email request", msg, req.email)
+
 def email_api_key_request(logger, req, minutes_expiry):
     url = url_for("paydb.api_key_confirm", token=req.token, secret=req.secret, _external=True)
     msg = f"You have a pending api key request waiting!<br/><br/>Confirm your registration <a href='{url}'>here</a><br/><br/>Confirm within {minutes_expiry} minutes"
@@ -59,6 +64,20 @@ def sms_payment_claim(logger, asset_name, payment, hours_expiry):
     msg = f"You have a {asset_name} payment waiting! Claim your payment (within {hours_expiry} hours) {url}"
     email = str(payment.mobile) + "@transmitsms.com"
     send_email(logger, "{asset_name} Payment", msg, email)
+
+def email_stash_save_request(logger, email, req, minutes_expiry):
+    url = url_for("stash_bp.stash_save_confirm", token=req.token, secret=req.secret, _external=True)
+    msg = f"You have a pending stash save request waiting!<br/><br/>Confirm your stash <a href='{url}'>here</a><br/><br/>Confirm within {minutes_expiry} minutes"
+    send_email(logger, "Confirm your stash request", msg, email)
+
+def email_stash_save_exists(logger, email, req):
+    msg = "We have received a request to store a stash for you but you already have a stash<br/><br/>"
+    send_email(logger, "Your stash already exists", msg, email)
+
+def email_stash_load_request(logger, email, req, minutes_expiry):
+    url = url_for("stash_bp.stash_load_confirm", token=req.token, secret=req.secret, _external=True)
+    msg = f"You have a pending stash load request waiting!<br/><br/>Confirm the request came from you <a href='{url}'>here</a><br/><br/>Confirm within {minutes_expiry} minutes"
+    send_email(logger, "Confirm your stash request", msg, email)
 
 def generate_key(num=20):
     return binascii.hexlify(os.urandom(num)).decode()
