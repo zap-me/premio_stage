@@ -110,3 +110,4 @@ def sha256(string):
     data = str2bytes(string)
     raw_hash = hashlib.sha256(data).digest()
     return binascii.hexlify(raw_hash).decode()
+

@@ -1,4 +1,5 @@
 # pylint: disable=unbalanced-tuple-unpacking
+# pylint: disable-msg=too-many-function-args
 
 import logging
 import time
@@ -7,7 +8,8 @@ import json
 
 from flask import Blueprint, request, jsonify, flash, redirect, render_template
 import flask_security
-from flask_security.utils import encrypt_password
+from flask_security.utils import encrypt_password, verify_password
+from flask_security.recoverable import send_reset_password_instructions
 from flask_socketio import Namespace, emit, join_room, leave_room
 
 import web_utils
@@ -243,6 +245,24 @@ def user_info():
         return jsonify(dict(email=user.email, balance=balance, photo=user.photo, photo_type=user.photo_type, roles=roles, permissions=perms))
     return jsonify(dict(email=user.email, balance=-1, photo=user.photo, photo_type=user.photo_type, roles=[], permissions=[]))
 
+@paydb.route('/user_reset_password', methods=['GET', 'POST'])
+def user_reset_password():
+    sig = request_get_signature()
+    content = request.get_json(force=True)
+    if content is None:
+        return bad_request(web_utils.INVALID_JSON)
+    params, err_response = get_json_params(content, ["api_key", "nonce"])
+    if err_response:
+        return err_response
+    api_key, nonce = params
+    res, reason, api_key = check_auth(db.session, api_key, nonce, sig, request.data)
+    if not res:
+        return bad_request(reason)
+    user = api_key.user
+    #### separate DB for the instructions(flask-security)
+    send_reset_password_instructions(user)
+    return 'reset password instructions sent'
+
 @paydb.route('/user_update_email', methods=['GET', 'POST'])
 def user_update_email():
     sig = request_get_signature()
@@ -264,7 +284,7 @@ def user_update_email():
     utils.email_user_update_email_request(logger, req, req.MINUTES_EXPIRY)
     db.session.add(req)
     db.session.commit()
-    return 'ok'
+    return 'confirmation email sent'
 
 @paydb.route('/user_update_email_confirm/<token>', methods=['GET'])
 def user_update_email_confirm(token=None):
@@ -287,6 +307,29 @@ def user_update_email_confirm(token=None):
     db.session.commit()
     flash('User email updated.', 'success')
     return redirect('/')
+
+@paydb.route('/user_update_password', methods=['GET', 'POST'])
+def user_update_password():
+    sig = request_get_signature()
+    content = request.get_json(force=True)
+    if content is None:
+        return bad_request(web_utils.INVALID_JSON)
+    params, err_response = get_json_params(content, ["api_key", "nonce", "current_password", "new_password"])
+    if err_response:
+        return err_response
+    api_key, nonce, current_password, new_password = params
+    res, reason, api_key = check_auth(db.session, api_key, nonce, sig, request.data)
+    if not res:
+        return bad_request(reason)
+    user = api_key.user
+    verified_password = verify_password(current_password, user.password)
+    if not verified_password:
+        return bad_request(web_utils.INCORRECT_PASSWORD)
+    ### set the new_password:
+    user.password = encrypt_password(new_password)
+    db.session.add(user)
+    db.session.commit()
+    return 'password changed.'
 
 @paydb.route('/user_update_photo', methods=['GET', 'POST'])
 def user_update_photo():
