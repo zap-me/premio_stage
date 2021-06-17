@@ -2,39 +2,119 @@
 <html lang="en-US">
     <head>
         <meta charset="utf-8">
+      <style>
+        @import url('https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@500&display=swap');
+        * {
+          font-family: 'Source Code Pro', monospace;
+        }
+        body {
+          margin: 0;
+          padding: 0;
+        }
+        .particle-section {
+          width: 100vw;
+          height: 100vh;
+          position:  absolute;
+          display:  block;
+          top: 0;
+          left: 0;
+          z-index: 0;
+        }
+        .div-overlay {
+          width: 100vw;
+          height: 100vh; 
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          background-color: red;
+          z-index: 999;
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          background-color: transparent;
+        }
+        .qr-holder {
+          background-color: black;
+          width: 70vw;
+          height: 70vw;
+          border-radius: 13.2%;
+          margin-top: 10vw;
+        }
+        #input-amount {
+          width: 70vw;
+          height: 10vw;
+          margin-top: 2.5vw;
+          border-radius: 5%;
+          border-width: 0.7vw;
+          text-align: center;
+        }
+        .field-header , #input-amount {
+          font-size: 7vw;
+        }
+      </style>
     </head>
+    <body>
+      <canvas class="particle-section"></canvas>
+      <div class="div-overlay">
+        <div class="qr-holder">
+        </div>
+        <p class="field-header">amount</p>
+        <input type="recieve-amount" id="input-amount">
+        <p class="field-header">message</p>
+        <input type="recieve-msg" id="input-amount">
+      </div>
+      <script src="https://cdn.jsdelivr.net/npm/particlesjs@2.2.3/dist/particles.min.js" integrity="sha256-cy35RxCREfCgW7nc5h5HlCw5eEF4JKc9O+mb9BN07kY=" crossorigin="anonymous"></script>
+      <script src="https://cdn.jsdelivr.net/npm/easyqrcodejs@4.4.3/dist/easy.qrcode.min.js" integrity="sha256-Z6PVOqJTVgyK+MUl+yuaDQJGCJ6N05pzzRHrY0FD0Cg=" crossorigin="anonymous"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/rollups/hmac-sha256.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/components/enc-base64-min.js"></script>
+      <script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/rollups/hmac-sha256.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/components/enc-base64-min.js"></script>
-<script>
+          window.onload = function() {
+	    Particles.init({
+	      selector: '.particle-section',
+              maxParticles: 100,
+              connectParticles: true,
+	    });
+	  };
 
-    const URL_BASE = "https://premio-demo.caprover.acuerdo.dev/"
-    const WS_URL = "wws://premio-demo.caprover.acuerdo.dev/"
-    
-    const apikey = 'XXXXX';
-    const apisecret = 'XXXXX';
+	  const URL_BASE = "https://premio-demo.caprover.acuerdo.dev/"
+	  const WS_URL = "wws://premio-demo.caprover.acuerdo.dev/"
+	  
+	  const apikey = 'Zpo2uTItVzE';
+	  const apisecret = 'RnFm-W11ODSzlmdvwFZtTQ';
 
-    async function postPayDb(endpoint, params) {
-        params['api_key'] = apikey;
-        params['nonce'] = Math.floor(new Date().getTime() / 1000);
-        var body = JSON.stringify(params);
-        console.log(body);
+	  async function postPayDb(endpoint, params) {
+	      params['api_key'] = apikey;
+	      params['nonce'] = Math.floor(new Date().getTime() / 1000);
+	      var body = JSON.stringify(params);
+	      console.log(body);
 
-        var hash = CryptoJS.HmacSHA256(body, apisecret);
-        var sig = CryptoJS.enc.Base64.stringify(hash);
-        console.log(sig);
+	      var hash = CryptoJS.HmacSHA256(body, apisecret);
+	      var sig = CryptoJS.enc.Base64.stringify(hash);
+	      console.log(sig);
 
-        const response = await fetch(URL_BASE + endpoint, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json', 'X-Signature': sig},
-            body: body
-        });
-        console.log(response.status);
-    
-        return await response.json();
-    }
+	      const response = await fetch(URL_BASE + endpoint, {
+		  method: 'POST',
+		  headers: {'Content-Type': 'application/json', 'X-Signature': sig},
+		  body: body
+	      });
+	      console.log(response.status);
+	  
+	      return await response.json();
+	  }
 
-    postPayDb('paydb/user_info', {email: null}).then((res) => console.log(JSON.stringify(res)));
-</script>
+	  postPayDb('paydb/user_info', {email: null}).then(
+            function(res) {
+              var length = window.innerWidth * 0.7;
+              var logoSrc = "data:image/png;base64," + res.photo;
+              var qrOptions = {text: "premiopay://" + res.email, logo: logoSrc, width: length, height: length};
+              new QRCode(document.querySelector(".qr-holder"), qrOptions);
+              console.log(JSON.stringify(res));
+            }
+          );
+      </script>
+    </body>
+
 
 </html>
