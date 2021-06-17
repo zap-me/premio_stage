@@ -36,21 +36,21 @@
         }
         .qr-holder {
           background-color: transparent;
-          width: 70vw;
-          height: 70vw;
+          width: 25vw;
+          height: 25vw;
           border-radius: 13.2%;
-          margin-top: 10vw;
+          margin-top: 10vh;
         }
         .input {
-          width: 70vw;
-          height: 10vw;
+          width: 10vw;
+          height: 4vh;
           margin-top: 2.5vw;
           border-radius: 5%;
-          border-width: 0.7vw;
+          border-width: 0.2vw;
           text-align: center;
         }
         .field-header , .input {
-          font-size: 7vw;
+          font-size: 2vh;
         }
       </style>
     </head>
@@ -85,7 +85,7 @@
           var photoType;
 
           function updateQr() {
-              var length = window.innerWidth * 0.7;
+              var length = window.innerWidth * 0.25;
               var logoSrc = "data:image/png;base64," + photo;
               //TODO if photoType =- 'svg'
               var amount = parseFloat(document.querySelector('#input-amount').value) * 100;
@@ -106,7 +106,7 @@
           window.onload = function() {
 	    Particles.init({
 	      selector: '.particle-section',
-              maxParticles: 100,
+              maxParticles: 180,
               connectParticles: true,
 	    });
             document.querySelector('#input-amount').addEventListener('input', inputChange);
@@ -158,8 +158,10 @@
 	  socket.on('tx', (arg) => {
 	      console.log(arg);
               var tx = JSON.parse(arg);
-              if (tx.recipient == email)
+              if (tx.recipient == email) {
+                console.log("recieved");
 		Swal.fire('Transaction Received!', arg, 'success');
+              }
 	  });
 
 	  postPayDb('paydb/user_info', {email: null}).then(
