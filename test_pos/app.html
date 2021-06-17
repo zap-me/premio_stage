@@ -35,13 +35,13 @@
           background-color: transparent;
         }
         .qr-holder {
-          background-color: black;
+          background-color: transparent;
           width: 70vw;
           height: 70vw;
           border-radius: 13.2%;
           margin-top: 10vw;
         }
-        #input-amount {
+        .input {
           width: 70vw;
           height: 10vw;
           margin-top: 2.5vw;
@@ -49,7 +49,7 @@
           border-width: 0.7vw;
           text-align: center;
         }
-        .field-header , #input-amount {
+        .field-header , .input {
           font-size: 7vw;
         }
       </style>
@@ -60,16 +60,48 @@
         <div class="qr-holder">
         </div>
         <p class="field-header">amount</p>
-        <input type="recieve-amount" id="input-amount">
-        <p class="field-header">message</p>
-        <input type="recieve-msg" id="input-amount">
+        <input type="number" class="input" id="input-amount">
+        <p class="field-header">invoice id</p>
+        <input type="text" class="input" id="input-invoiceid">
       </div>
       <script src="https://cdn.jsdelivr.net/npm/particlesjs@2.2.3/dist/particles.min.js" integrity="sha256-cy35RxCREfCgW7nc5h5HlCw5eEF4JKc9O+mb9BN07kY=" crossorigin="anonymous"></script>
       <script src="https://cdn.jsdelivr.net/npm/easyqrcodejs@4.4.3/dist/easy.qrcode.min.js" integrity="sha256-Z6PVOqJTVgyK+MUl+yuaDQJGCJ6N05pzzRHrY0FD0Cg=" crossorigin="anonymous"></script>
       <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/rollups/hmac-sha256.js" integrity="sha384-nIoggK09VaqN3XWoPnmd+/rQnyaDFUUqYYH1e3S0h7w5Q/q8eUBbNUTaI2auJiQz" crossorigin="anonymous"></script>
       <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/components/enc-base64-min.js" integrity="sha384-QhR/8T3ugj5vlN+fMUechKVmirQsSCuvX+EZRHVe3SCVhyQyy/VxxlP2Qme8iFCr" crossorigin="anonymous"></script>
       <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.1.2/socket.io.min.js" integrity="sha384-toS6mmwu70G0fw54EGlWWeA4z3dyJ+dlXBtSURSKN4vyRFOcxd3Bzjj/AoOwY+Rg" crossorigin="anonymous"></script>
+      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.17/dist/sweetalert2.all.min.js" integrity="sha256-/A5TntSW7qgHFs6AcLw31t3ExTWuFBXgBAIkUZqX6o0=" crossorigin="anonymous"></script>
       <script>
+	  const URL_BASE = "https://premio-demo.caprover.acuerdo.dev/"
+	  const WS_URL = "https://premio-demo.caprover.acuerdo.dev/paydb"
+
+	  const apikey = 'XXXX';
+	  const apisecret = 'XXXX';
+
+	  const socket = io(WS_URL);
+
+          var qrCodeObj = null;
+          var email;
+          var photo;
+          var photoType;
+
+          function updateQr() {
+              var length = window.innerWidth * 0.7;
+              var logoSrc = "data:image/png;base64," + photo;
+              //TODO if photoType =- 'svg'
+              var amount = parseFloat(document.querySelector('#input-amount').value) * 100;
+              var invoiceid = document.querySelector('#input-invoiceid').value;
+              var code = `premiopay://${email}?amount=${amount}&attachment={"invoiceid":"${invoiceid}"}`;
+              if (qrCodeObj !== null)
+                qrCodeObj.makeCode(code);
+              else {
+		var qrOptions = {text: code, logo: logoSrc, width: length, height: length};
+		qrCodeObj = new QRCode(document.querySelector(".qr-holder"), qrOptions);
+              }
+	  }
+
+          function inputChange(event) {
+              updateQr();
+	  }
 
           window.onload = function() {
 	    Particles.init({
@@ -77,15 +109,9 @@
               maxParticles: 100,
               connectParticles: true,
 	    });
+            document.querySelector('#input-amount').addEventListener('input', inputChange);
+            document.querySelector('#input-invoiceid').addEventListener('input', inputChange);
 	  };
-
-	  const URL_BASE = "https://premio-demo.caprover.acuerdo.dev/"
-	  const WS_URL = "https://premio-demo.caprover.acuerdo.dev/paydb"
-	  
-	  const apikey = 'Zpo2uTItVzE';
-	  const apisecret = 'RnFm-W11ODSzlmdvwFZtTQ';
-
-	  const socket = io(WS_URL);
 
 	  function nonce() {
 	      return Math.floor(new Date().getTime() / 1000);
@@ -131,15 +157,18 @@
 	  
 	  socket.on('tx', (arg) => {
 	      console.log(arg);
+              var tx = JSON.parse(arg);
+              if (tx.recipient == email)
+		Swal.fire('Transaction Received!', arg, 'success');
 	  });
 
 	  postPayDb('paydb/user_info', {email: null}).then(
             function(res) {
-              var length = window.innerWidth * 0.7;
-              var logoSrc = "data:image/png;base64," + res.photo;
-              var qrOptions = {text: "premiopay://" + res.email, logo: logoSrc, width: length, height: length};
-              new QRCode(document.querySelector(".qr-holder"), qrOptions);
               console.log(JSON.stringify(res));
+              email = res.email;
+              photo = res.photo;
+              photoType = res.photo_type;
+              updateQr();
             }
           );
       </script>
