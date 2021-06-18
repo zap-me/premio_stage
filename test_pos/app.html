@@ -74,11 +74,11 @@
 	  const URL_BASE = "https://premio-demo.caprover.acuerdo.dev/"
 	  const WS_URL = "https://premio-demo.caprover.acuerdo.dev/paydb"
 
-	  const apikey = 'XXXX';
-	  const apisecret = 'XXXX';
+	  const apikey = 'XXX';
+	  const apisecret = 'XXX';
 
 	  const socket = io(WS_URL);
-
+          const REBATE_FACTOR = 0.05;
           var qrCodeObj = null;
           var email;
           var photo;
@@ -160,7 +160,37 @@
               var tx = JSON.parse(arg);
               if (tx.recipient == email) {
                 console.log("recieved");
-		Swal.fire('Transaction Received!', arg, 'success');
+		Swal.fire('Transaction Received!', arg, 'success').then(
+                  function(result) {
+                    if(result.isConfirmed) {
+                      Swal.fire(
+                        {
+                          title: "give rebate",
+                          html: `<input type='email' id='email-input' class='swal2-input' placeholder='email'>`,
+                          preConfirm: function() {
+                            const rebateEmail = Swal.getPopup().querySelector("#email-input").value;
+                            if(!rebateEmail) {
+                              Swal.showValidationMessage('please enter an email');
+                            }
+                            return rebateEmail; 
+                          }
+                        }
+                      ).then(
+                          function(emailInput) {
+                            postPayDb('payment_create', {reason: "rebate", recipient: emailInput.value, amount: Math.floor(tx.amount * REBATE_FACTOR), category: "testing", message: 1})
+                            .then(
+                              function(res) {
+                                console.log("sent");
+                              }
+                            )
+
+                            ;
+                          }
+                        
+                      );
+                    }
+                  }
+                );
               }
 	  });
 
