@@ -158,39 +158,59 @@
 	  socket.on('tx', (arg) => {
 	      console.log(arg);
               var tx = JSON.parse(arg);
-              if (tx.recipient == email) {
-                console.log("recieved");
-		Swal.fire('Transaction Received!', arg, 'success').then(
-                  function(result) {
-                    if(result.isConfirmed) {
-                      Swal.fire(
-                        {
-                          title: "give rebate",
-                          html: `<input type='email' id='email-input' class='swal2-input' placeholder='email'>`,
-                          preConfirm: function() {
-                            const rebateEmail = Swal.getPopup().querySelector("#email-input").value;
-                            if(!rebateEmail) {
-                              Swal.showValidationMessage('please enter an email');
-                            }
-                            return rebateEmail; 
-                          }
-                        }
-                      ).then(
-                          function(emailInput) {
-                            postPayDb('payment_create', {reason: "rebate", recipient: emailInput.value, amount: Math.floor(tx.amount * REBATE_FACTOR), category: "testing", message: 1})
-                            .then(
-                              function(res) {
-                                console.log("sent");
-                              }
-                            )
+              //if is merchant && correct invoice id
+              if (tx.recipient == email && JSON.parse(tx.attachment).invoiceid == document.querySelector("#input-invoiceid").value) {
+                if(parseFloat(document.querySelector("#input-amount").value * 100) == tx.amount) {
+		  Swal.fire('Transaction Received!', arg, 'success').then(
+		    function(result) {
+		      if(result.isConfirmed) {
+			Swal.fire(
+			  {
+			    title: "Give rebate",
+			    html: `<input type='email' id='email-input' class='swal2-input' placeholder='email'>`,
+			    preConfirm: function() {
+			      const rebateEmail = Swal.getPopup().querySelector("#email-input").value;
+			      if(!rebateEmail) {
+				Swal.showValidationMessage('please enter an email');
+			      }
+			      return rebateEmail; 
+			    }
+			  }
+			).then(
+			    function(emailInput) {
+			      postPayDb('payment_create', {reason: "rebate", recipient: emailInput.value, amount: Math.floor(tx.amount * REBATE_FACTOR), category: "testing", message: 1})
+			      .then(
+				function(res) {
+				  console.log("sent");
+				}
+			      )
 
-                            ;
-                          }
-                        
-                      );
+			      ;
+			    }
+			  
+			);
+		      }
+		    }
+		  );
+                //otherwise, amount not correct, so update QR to include remaining amount:
+                } else {
+                  Swal.fire(
+                    {
+		      icon: "error", 
+		      title: "Insufficient amount",
+		      text: "The QR code has been updated. Please send the remaining amount" 
                     }
-                  }
-                );
+
+                  ).then(
+                    function(result) {
+                      if(result.isConfirmed) {
+                        document.querySelector('#input-amount').value = parseFloat(parseFloat(document.querySelector('#input-amount').value) - (tx.amount / 100));
+                        updateQr();
+                      }
+                    }
+                  );
+                }
+                console.log("recieved");
               }
 	  });
 
