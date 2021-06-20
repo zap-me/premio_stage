@@ -74,9 +74,6 @@
 	  const URL_BASE = "https://premio-demo.caprover.acuerdo.dev/"
 	  const WS_URL = "https://premio-demo.caprover.acuerdo.dev/paydb"
 
-	  const apikey = 'XXX';
-	  const apisecret = 'XXX';
-
 	  const socket = io(WS_URL);
           const REBATE_FACTOR = 0.05;
           var qrCodeObj = null;
@@ -103,126 +100,152 @@
               updateQr();
 	  }
 
-          window.onload = function() {
+          function initPage() {
+            const keysResult = JSON.parse(localStorage.getItem("keys"));
+            const apikey = keysResult["apikey"];
+            const apisecret = keysResult["secret"];
+            document.querySelector('#input-amount').addEventListener('input', inputChange);
+            document.querySelector('#input-invoiceid').addEventListener('input', inputChange);
+	    function nonce() {
+		return Math.floor(new Date().getTime() / 1000);
+	    }
+
+	    function sign(data) {
+		var hash = CryptoJS.HmacSHA256(data, apisecret);
+		return CryptoJS.enc.Base64.stringify(hash);
+	    }
+
+	    async function postPayDb(endpoint, params) {
+		params['api_key'] = apikey;
+		params['nonce'] = nonce();
+		var body = JSON.stringify(params);
+		console.log(body);
+
+		var sig = sign(body);
+		console.log(sig);
+
+		const response = await fetch(URL_BASE + endpoint, {
+		    method: 'POST',
+		    headers: {'Content-Type': 'application/json', 'X-Signature': sig},
+		    body: body
+		});
+		console.log(response.status);
+	    
+		return await response.json();
+	    }
+
+	    socket.on('connect', () => {
+		console.log('socket connected, id', socket.id);
+		// create auth data
+		var nonce_ = nonce();
+		var sig = sign(nonce_.toString());
+		auth = {signature: sig, api_key: apikey, nonce: nonce_};
+		// emit auth message
+		socket.emit('auth', auth);
+	    });
+
+	    socket.on("info", (arg) => {
+		console.log(arg);
+	    });
+	    
+	    socket.on('tx', (arg) => {
+		console.log(arg);
+		var tx = JSON.parse(arg);
+		//if is merchant && correct invoice id
+		if (tx.recipient == email && JSON.parse(tx.attachment).invoiceid == document.querySelector("#input-invoiceid").value) {
+		  if(parseFloat(document.querySelector("#input-amount").value * 100) == tx.amount) {
+		    Swal.fire('Transaction Received!', arg, 'success').then(
+		      function(result) {
+			if(result.isConfirmed) {
+			  Swal.fire(
+			    {
+			      title: "Give rebate",
+			      html: `<input type='email' id='email-input' class='swal2-input' placeholder='email'>`,
+			      preConfirm: function() {
+				const rebateEmail = Swal.getPopup().querySelector("#email-input").value;
+				if(!rebateEmail) {
+				  Swal.showValidationMessage('please enter an email');
+				}
+				return rebateEmail; 
+			      }
+			    }
+			  ).then(
+			      function(emailInput) {
+				postPayDb('payment_create', {reason: "rebate", recipient: emailInput.value, amount: Math.floor(tx.amount * REBATE_FACTOR), category: "testing", message: 1})
+				.then(
+				  function(res) {
+				    console.log("sent");
+				  }
+				)
+
+				;
+			      }
+			    
+			  );
+			}
+		      }
+		    );
+		  //otherwise, amount not correct, so update QR to include remaining amount:
+		  } else {
+		    Swal.fire(
+		      {
+			icon: "error", 
+			title: "Insufficient amount",
+			text: "The QR code has been updated. Please send the remaining amount" 
+		      }
+
+		    ).then(
+		      function(result) {
+			if(result.isConfirmed) {
+			  document.querySelector('#input-amount').value = parseFloat(parseFloat(document.querySelector('#input-amount').value) - (tx.amount / 100));
+			  updateQr();
+			}
+		      }
+		    );
+		  }
+		  console.log("recieved");
+		}
+	    });
+
+	    postPayDb('paydb/user_info', {email: null}).then(
+	      function(res) {
+		console.log(JSON.stringify(res));
+		email = res.email;
+		photo = res.photo;
+		photoType = res.photo_type;
+		updateQr();
+	      }
+	    );
+          }
+
+          window.onload = async function() {
 	    Particles.init({
 	      selector: '.particle-section',
               maxParticles: 180,
               connectParticles: true,
 	    });
-            document.querySelector('#input-amount').addEventListener('input', inputChange);
-            document.querySelector('#input-invoiceid').addEventListener('input', inputChange);
+            if(localStorage.getItem("keys") == null) {
+              (Swal.fire(
+                {
+                   title: "POS setup",
+                   html: `<input type='text' id='apikey-input' class='swal2-input' placeholder='premio api-key'><input type='text' id='secret-input' class='swal2-input' placeholder='premio secret'>`,
+                   preConfirm: function() {
+	             const apiKey = Swal.getPopup().querySelector("#apikey-input").value;
+	             const secretPrem  = Swal.getPopup().querySelector("#secret-input").value;
+                       if(!apiKey || !secretPrem) {
+                         Swal.showValidationMessage('Please enter all keys');
+			  }
+			  localStorage.setItem("keys", JSON.stringify({apikey: apiKey, secret: secretPrem}));
+			}
+		      }
+		    ).then(
+                      function() {initPage();}
+                    ));
+            } else {
+              initPage();
+            }
 	  };
 
-	  function nonce() {
-	      return Math.floor(new Date().getTime() / 1000);
-	  }
-
-	  function sign(data) {
-	      var hash = CryptoJS.HmacSHA256(data, apisecret);
-	      return CryptoJS.enc.Base64.stringify(hash);
-	  }
-
-	  async function postPayDb(endpoint, params) {
-	      params['api_key'] = apikey;
-	      params['nonce'] = nonce();
-	      var body = JSON.stringify(params);
-	      console.log(body);
-
-	      var sig = sign(body);
-	      console.log(sig);
-
-	      const response = await fetch(URL_BASE + endpoint, {
-		  method: 'POST',
-		  headers: {'Content-Type': 'application/json', 'X-Signature': sig},
-		  body: body
-	      });
-	      console.log(response.status);
-	  
-	      return await response.json();
-	  }
-
-	  socket.on('connect', () => {
-	      console.log('socket connected, id', socket.id);
-	      // create auth data
-	      var nonce_ = nonce();
-	      var sig = sign(nonce_.toString());
-	      auth = {signature: sig, api_key: apikey, nonce: nonce_};
-	      // emit auth message
-	      socket.emit('auth', auth);
-	  });
-
-	  socket.on("info", (arg) => {
-	      console.log(arg);
-	  });
-	  
-	  socket.on('tx', (arg) => {
-	      console.log(arg);
-              var tx = JSON.parse(arg);
-              //if is merchant && correct invoice id
-              if (tx.recipient == email && JSON.parse(tx.attachment).invoiceid == document.querySelector("#input-invoiceid").value) {
-                if(parseFloat(document.querySelector("#input-amount").value * 100) == tx.amount) {
-		  Swal.fire('Transaction Received!', arg, 'success').then(
-		    function(result) {
-		      if(result.isConfirmed) {
-			Swal.fire(
-			  {
-			    title: "Give rebate",
-			    html: `<input type='email' id='email-input' class='swal2-input' placeholder='email'>`,
-			    preConfirm: function() {
-			      const rebateEmail = Swal.getPopup().querySelector("#email-input").value;
-			      if(!rebateEmail) {
-				Swal.showValidationMessage('please enter an email');
-			      }
-			      return rebateEmail; 
-			    }
-			  }
-			).then(
-			    function(emailInput) {
-			      postPayDb('payment_create', {reason: "rebate", recipient: emailInput.value, amount: Math.floor(tx.amount * REBATE_FACTOR), category: "testing", message: 1})
-			      .then(
-				function(res) {
-				  console.log("sent");
-				}
-			      )
-
-			      ;
-			    }
-			  
-			);
-		      }
-		    }
-		  );
-                //otherwise, amount not correct, so update QR to include remaining amount:
-                } else {
-                  Swal.fire(
-                    {
-		      icon: "error", 
-		      title: "Insufficient amount",
-		      text: "The QR code has been updated. Please send the remaining amount" 
-                    }
-
-                  ).then(
-                    function(result) {
-                      if(result.isConfirmed) {
-                        document.querySelector('#input-amount').value = parseFloat(parseFloat(document.querySelector('#input-amount').value) - (tx.amount / 100));
-                        updateQr();
-                      }
-                    }
-                  );
-                }
-                console.log("recieved");
-              }
-	  });
-
-	  postPayDb('paydb/user_info', {email: null}).then(
-            function(res) {
-              console.log(JSON.stringify(res));
-              email = res.email;
-              photo = res.photo;
-              photoType = res.photo_type;
-              updateQr();
-            }
-          );
       </script>
     </body>
 
