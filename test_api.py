@@ -8,14 +8,25 @@ import sys
 import argparse
 import time
 import json
+import os
 
 import requests
 import socketio
 
 from web_utils import create_hmac_sig
 
-URL_BASE = "http://localhost:5000/"
-WS_URL = "ws://localhost:5000/"
+if os.getenv("SERVER_NAME"):
+    SERVER_NAME = os.getenv("SERVER_NAME")
+else:
+    SERVER_NAME = "localhost:5000"
+
+if os.getenv("URL_SCHEMA"):
+    URL_SCHEMA = os.getenv("URL_SCHEMA")
+else:
+    URL_SCHEMA = "http"
+
+URL_BASE = "{url_schema}://{server_name}/".format(url_schema=URL_SCHEMA, server_name=SERVER_NAME)
+WS_URL = "ws://{server_name}/".format(server_name=SERVER_NAME)
 
 EXIT_NO_COMMAND = 1
 

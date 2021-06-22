@@ -7,6 +7,9 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_sqlalchemy import SQLAlchemy
 from flask_mail_sendgrid import MailSendGrid
 from flask_socketio import SocketIO
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from flask_google_recaptcha import GoogleReCaptcha
 
 SERVER_MODE_WAVES = 'waves'
 SERVER_MODE_PAYDB = 'paydb'
@@ -57,6 +60,12 @@ if os.getenv("USE_STASH"):
     app.config["USE_STASH"] = True
 else:
     app.config["USE_STASH"] = False
+if os.getenv("RECAPTCHA_SITE_KEY"):
+    app.config["RECAPTCHA_SITE_KEY"] = os.getenv("RECAPTCHA_SITE_KEY")
+if os.getenv("RECAPTCHA_PUBLIC_KEY"):
+    app.config["RECAPTCHA_PUBLIC_KEY"] = os.getenv("RECAPTCHA_PUBLIC_KEY")
+if os.getenv("RECAPTCHA_SECRET_KEY"):
+    app.config["RECAPTCHA_PRIVATE_KEY"] = os.getenv("RECAPTCHA_SECRET_KEY")
 
 def set_vital_setting(env_name, setting_name=None, acceptable_values=None):
     # pylint: disable=global-statement
@@ -114,3 +123,5 @@ set_vital_setting("FIREBASE_CREDENTIALS")
 db = SQLAlchemy(app)
 mail = MailSendGrid(app)
 socketio = SocketIO(app)
+limiter = Limiter(app, key_func=get_remote_address, headers_enabled=True, default_limits=["3000 per minute"])
+recaptcha = GoogleReCaptcha(app)

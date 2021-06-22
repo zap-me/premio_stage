@@ -6,21 +6,25 @@ import time
 import datetime
 import json
 
-from flask import Blueprint, request, jsonify, flash, redirect, render_template
+from flask import Blueprint, request, jsonify, flash, redirect, render_template, url_for
 import flask_security
 from flask_security.utils import encrypt_password, verify_password
 from flask_security.recoverable import send_reset_password_instructions
+from flask_security.confirmable import send_confirmation_instructions
 from flask_socketio import Namespace, emit, join_room, leave_room
 
 import web_utils
 from web_utils import bad_request, get_json_params, request_get_signature, check_auth
 import utils
-from app_core import db, socketio
+from app_core import db, socketio, limiter
 from models import user_datastore, User, UserCreateRequest, UserUpdateEmailRequest, Permission, ApiKey, ApiKeyRequest, PayDbTransaction
 import paydb_core
+from register_user_form import RegisterForm
+from app import add_user
 
 logger = logging.getLogger(__name__)
 paydb = Blueprint('paydb', __name__, template_folder='templates')
+limiter.limit("100/minute")(paydb)
 ws_sids = {}
 
 #
@@ -67,11 +71,11 @@ class PayDbNamespace(Namespace):
 
 socketio.on_namespace(PayDbNamespace(NS))
 
-#
 # Private (paydb) API
 #
 
 @paydb.route('/user_register', methods=['POST'])
+@limiter.limit("2/minute;40/hour")
 def user_register():
     content = request.get_json(force=True)
     if content is None:
@@ -97,6 +101,7 @@ def user_register():
     return 'ok'
 
 @paydb.route('/user_registration_confirm/<token>', methods=['GET'])
+@limiter.limit("2/minute;40/hour")
 def user_registration_confirm(token=None):
     req = UserCreateRequest.from_token(db.session, token)
     if not req:
@@ -120,6 +125,7 @@ def user_registration_confirm(token=None):
     return redirect('/')
 
 @paydb.route('/api_key_create', methods=['POST'])
+@limiter.limit("3/hour")
 def api_key_create():
     content = request.get_json(force=True)
     if content is None:
@@ -144,6 +150,7 @@ def api_key_create():
     return jsonify(dict(token=api_key.token, secret=api_key.secret, device_name=api_key.device_name, expiry=api_key.expiry))
 
 @paydb.route('/api_key_request', methods=['POST'])
+@limiter.limit("3/hour")
 def api_key_request():
     content = request.get_json(force=True)
     if content is None:
@@ -163,6 +170,7 @@ def api_key_request():
     return jsonify(dict(token=req.token))
 
 @paydb.route('/api_key_claim', methods=['POST'])
+@limiter.limit("3/hour")
 def api_key_claim():
     content = request.get_json(force=True)
     if content is None:
@@ -185,6 +193,7 @@ def api_key_claim():
     return jsonify(dict(token=api_key.token, secret=api_key.secret, device_name=api_key.device_name, expiry=api_key.expiry))
 
 @paydb.route('/api_key_confirm/<token>/<secret>', methods=['GET', 'POST'])
+@limiter.limit("3/hour")
 def api_key_confirm(token=None, secret=None):
     req = ApiKeyRequest.from_token(db.session, token)
     if not req:
@@ -220,9 +229,11 @@ def api_key_confirm(token=None, secret=None):
     return render_template('paydb/api_key_confirm.html', req=req, perms=Permission.PERMS_ALL)
 
 @paydb.route('/user_info', methods=['POST'])
+@limiter.exempt
 def user_info():
     sig = request_get_signature()
     content = request.get_json(force=True)
+    print(content)
     if content is None:
         return bad_request(web_utils.INVALID_JSON)
     params, err_response = get_json_params(content, ["api_key", "nonce", "email"])
@@ -246,6 +257,7 @@ def user_info():
     return jsonify(dict(email=user.email, balance=-1, photo=user.photo, photo_type=user.photo_type, roles=[], permissions=[]))
 
 @paydb.route('/user_reset_password', methods=['GET', 'POST'])
+@limiter.limit("3/hour")
 def user_reset_password():
     sig = request_get_signature()
     content = request.get_json(force=True)
@@ -264,6 +276,7 @@ def user_reset_password():
     return 'reset password instructions sent'
 
 @paydb.route('/user_update_email', methods=['GET', 'POST'])
+@limiter.limit("3/hour")
 def user_update_email():
     sig = request_get_signature()
     content = request.get_json(force=True)
@@ -287,6 +300,7 @@ def user_update_email():
     return 'confirmation email sent'
 
 @paydb.route('/user_update_email_confirm/<token>', methods=['GET'])
+@limiter.limit("3/hour")
 def user_update_email_confirm(token=None):
     req = UserUpdateEmailRequest.from_token(db.session, token)
     if not req:
@@ -309,6 +323,7 @@ def user_update_email_confirm(token=None):
     return redirect('/')
 
 @paydb.route('/user_update_password', methods=['GET', 'POST'])
+@limiter.limit("3/hour")
 def user_update_password():
     sig = request_get_signature()
     content = request.get_json(force=True)
@@ -332,6 +347,7 @@ def user_update_password():
     return 'password changed.'
 
 @paydb.route('/user_update_photo', methods=['GET', 'POST'])
+@limiter.limit("3/day")
 def user_update_photo():
     sig = request_get_signature()
     content = request.get_json(force=True)
@@ -352,6 +368,7 @@ def user_update_photo():
     return jsonify(dict(photo=user.photo, photo_type=user.photo_type))
 
 @paydb.route('/user_transactions', methods=['POST'])
+@limiter.exempt
 def user_transactions():
     sig = request_get_signature()
     content = request.get_json(force=True)
@@ -373,6 +390,7 @@ def user_transactions():
     return jsonify(dict(txs=txs))
 
 @paydb.route('/transaction_create', methods=['POST'])
+@limiter.exempt
 def transaction_create():
     sig = request_get_signature()
     content = request.get_json(force=True)
@@ -392,6 +410,7 @@ def transaction_create():
     return jsonify(dict(tx=tx.to_json()))
 
 @paydb.route('/transaction_info', methods=['POST'])
+@limiter.exempt
 def transaction_info():
     sig = request_get_signature()
     content = request.get_json(force=True)
@@ -410,3 +429,31 @@ def transaction_info():
     if tx.user != api_key.user and tx.recipient != api_key.user:
         return bad_request(web_utils.UNAUTHORIZED)
     return jsonify(dict(tx=tx.to_json()))
+
+### TESTING
+@paydb.route('/register_user', methods=['GET', 'POST'])
+@limiter.limit("30/hour")
+def register_user():
+    form = RegisterForm()
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+        g_recaptcha_response = request.form['g-recaptcha-response']
+        ### verify recaptcha
+        if not g_recaptcha_response:
+            flash('Confirmation on being human is required.', 'danger')
+            return redirect(url_for('paydb.register_user'))
+        user = User.from_email(db.session, email)
+        ### check for user in DB and create if not
+        if user:
+            flash('Email address already registered', 'danger')
+            return redirect(url_for('paydb.register_user'))
+        ### add user
+        add_user(email, password)
+        ### Need to query the DB for the same user to get some info.
+        user = User.from_email(db.session, email)
+        ### send confirmation email
+        send_confirmation_instructions(user)
+        flash('Check the email to confirm.', 'success')
+        return redirect('/')
+    return render_template('paydb/register_user.html', form=form)
