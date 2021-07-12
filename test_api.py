@@ -8,12 +8,16 @@ import sys
 import argparse
 import time
 import json
+import logging
 import os
 
 import requests
 import socketio
 
 from web_utils import create_hmac_sig
+from utils import log_socketio_version, setup_logging
+
+logger = logging.getLogger(__name__)
 
 if os.getenv("SERVER_NAME"):
     SERVER_NAME = os.getenv("SERVER_NAME")
@@ -278,4 +282,6 @@ def run_parser():
         function(args)
 
 if __name__ == "__main__":
+    setup_logging(logger, logging.DEBUG)
+    log_socketio_version(logger)
     run_parser()
