@@ -8,7 +8,7 @@ from urllib.parse import urlparse
 from flask import Blueprint, render_template, request, jsonify
 from flask_jsonrpc.exceptions import OtherError
 
-from app_core import app, db
+from app_core import app, db, limiter
 from models import WavesTx, WavesTxSig
 import utils
 import tx_utils
@@ -16,6 +16,7 @@ from web_utils import bad_request, get_json_params
 
 logger = logging.getLogger(__name__)
 mw = Blueprint('mw', __name__, template_folder='templates')
+limiter.limit("100 per hour")(mw)
 
 # wave specific config settings
 NODE_BASE_URL = app.config["NODE_BASE_URL"]
@@ -32,6 +33,7 @@ ASSET_MASTER_PUBKEY = app.config["ASSET_MASTER_PUBKEY"]
 #
 
 @app.context_processor
+@limiter.exempt
 def inject_config_qrcode_svg():
     url_parts = urlparse(request.url)
     url = url_parts._replace(scheme="premiomwlink", path="/config").geturl()
@@ -43,10 +45,12 @@ def inject_config_qrcode_svg():
 #
 
 @app.route("/config")
+@limiter.exempt
 def config():
     return jsonify(dict(asset_id=ASSET_ID, asset_name=ASSET_NAME, testnet=TESTNET, tx_signers=TX_SIGNERS, tx_types=tx_utils.TYPES))
 
 @app.route("/tx_link/<txid>")
+@limiter.exempt
 def tx_link(txid):
     url_parts = urlparse(request.url)
     url = url_parts._replace(scheme="premiomwlink", path="/txid/" + txid).geturl()
@@ -54,6 +58,7 @@ def tx_link(txid):
     return render_template("mw/tx_link.html", qrcode_svg=qrcode_svg, url=url)
 
 @app.route("/tx_create", methods=["POST"])
+@limiter.exempt
 def tx_create():
     tx_utils.tx_init_chain_id(TESTNET)
 
@@ -118,6 +123,7 @@ def tx_create():
     return jsonify(dict(txid=txid, state=tx_utils.CTX_CREATED, tx=tx))
 
 @app.route("/tx_status", methods=["POST"])
+@limiter.exempt
 def tx_status():
     content = request.get_json(force=True)
     if content is None:
@@ -133,6 +139,7 @@ def tx_status():
     return jsonify(dict(txid=txid, state=dbtx.state, tx=tx))
 
 @app.route("/tx_serialize", methods=["POST"])
+@limiter.exempt
 def tx_serialize():
     content = request.get_json(force=True)
     if content is None:
@@ -148,6 +155,7 @@ def tx_serialize():
     return jsonify(res)
 
 @app.route("/tx_signature", methods=["POST"])
+@limiter.exempt
 def tx_signature():
     content = request.get_json(force=True)
     if content is None:
@@ -167,6 +175,7 @@ def tx_signature():
     return jsonify(dict(txid=txid, state=dbtx.state, tx=tx))
 
 @app.route("/tx_broadcast", methods=["POST"])
+@limiter.exempt
 def tx_broadcast():
     content = request.get_json(force=True)
     if content is None:
