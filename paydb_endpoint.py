@@ -89,7 +89,7 @@ def user_register():
     user = User.from_email(db.session, email)
     if user:
         time.sleep(5)
-        return 'ok'
+        return bad_request(web_utils.USER_EXISTS)
     utils.email_user_create_request(logger, req, req.MINUTES_EXPIRY)
     db.session.add(req)
     db.session.commit()
