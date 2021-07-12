@@ -83,7 +83,10 @@ def generate_key(num=20):
     return binascii.hexlify(os.urandom(num)).decode()
 
 def is_email(val):
-    return re.match("[^@]+@[^@]+\.[^@]+", val) # pylint: disable=anomalous-backslash-in-string
+    # pylint: disable=anomalous-backslash-in-string
+    #if re.match("[^@]+@[^@]+\.[^@]+", val):
+    #    return val.lower()
+    return re.match("[^@]+@[^@]+\.[^@]+", val)
 
 def is_mobile(val):
     return val.isnumeric()

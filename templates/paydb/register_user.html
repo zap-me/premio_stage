@@ -9,8 +9,8 @@
                 <form method="POST">
                     {{ form.csrf_token }}
                     </ul>
-		    Email Address: 
-		    <br/>{{ form.email(size=60) }}
+		    Email Address:
+		    <input type="email" name="email" autocomplete="off" size=60>
                     <ul>
                     {% for error in form.email.error %}
                     <li style="coloured:red;">{{ error }}</li>

@@ -443,6 +443,8 @@ def register_user():
         if not g_recaptcha_response:
             flash('Confirmation on being human is required.', 'danger')
             return redirect(url_for('paydb.register_user'))
+        ### force email to lower case
+        email = email.lower()
         user = User.from_email(db.session, email)
         ### check for user in DB and create if not
         if user:
