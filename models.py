@@ -55,6 +55,7 @@ class Role(db.Model, RoleMixin):
     ROLE_ADMIN = 'admin'
     ROLE_PROPOSER = 'proposer'
     ROLE_AUTHORIZER = 'authorizer'
+    ROLE_REFERRAL_CLAIMER = 'referral_claimer'
 
     id = db.Column(db.Integer(), primary_key=True)
     name = db.Column(db.String(80), unique=True)
@@ -1179,3 +1180,26 @@ class PushNotificationLocationModelView(RestrictedModelView):
 
     column_list = ['date', 'location', 'fcm_registration_token']
     column_formatters = {'location': _format_location}
+
+class Referral(db.Model):
+    STATUS_CREATED = 'created'
+    STATUS_CLAIMED = 'claimed'
+    STATUS_DELETED = 'deleted'
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user = db.relationship('User', backref=db.backref('referrals', lazy='dynamic'))
+    date = db.Column(db.DateTime(), nullable=False)
+    recipient = db.Column(db.String, nullable=False)
+    reward_sender = db.Column(db.Integer, nullable=False)
+    reward_recipient = db.Column(db.Integer, nullable=False)
+    status = db.Column(db.String, nullable=False)
+
+    def __init__(self, user, recipient, reward_sender, reward_recipient):
+        self.user = user
+        self.date = datetime.datetime.now()
+        self.recipient = recipient
+        self.reward_sender = reward_sender
+        self.reward_recipient = reward_recipient
+        self.status = STATUS_CREATED

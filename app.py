@@ -106,6 +106,7 @@ if __name__ == "__main__":
     create_role(Role.ROLE_ADMIN, "super user")
     create_role(Role.ROLE_PROPOSER, "Can propose payments")
     create_role(Role.ROLE_AUTHORIZER, "Can authorize payments")
+    create_role(Role.ROLE_REFERRAL_CLAIMER, "Can claim referrals")
     create_permission(Permission.PERMISSION_RECIEVE, "view account name")
     create_permission(Permission.PERMISSION_BALANCE, "view account balance")
     create_permission(Permission.PERMISSION_HISTORY, "view account history")
