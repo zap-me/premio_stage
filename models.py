@@ -1224,7 +1224,7 @@ class Referral(db.Model):
         self.reward_recipient_type = reward_recipient_type
         self.reward_recipient = reward_recipient
         self.recipient_min_spend = recipient_min_spend
-        self.status = STATUS_CREATED
+        self.status = self.STATUS_CREATED
 
     def to_json(self):
         ref_schema = ReferralSchema()

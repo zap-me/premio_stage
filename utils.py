@@ -5,6 +5,7 @@ import io
 import hashlib
 import logging
 from importlib.metadata import version
+import decimal
 
 import pywaves
 from sendgrid import SendGridAPIClient
@@ -14,6 +15,10 @@ import qrcode
 import qrcode.image.svg
 
 from app_core import app
+
+def int2asset(num):
+    num = decimal.Decimal(num)
+    return num/100
 
 def send_email(logger, subject, msg, recipient=None):
     if not recipient:
@@ -40,7 +45,9 @@ def email_payment_claim(logger, asset_name, payment, hours_expiry):
     send_email(logger, f"Claim your {asset_name} payment", msg, payment.email)
 
 def email_payment_sent(logger, asset_name, payment):
-    msg = f"You have been sent a {asset_name} payment!<br/><br/>Check your app for details"
+    amount = int2asset(payment.amount)
+    asset_name = app.config["ASSET_NAME"]
+    msg = f"You have been sent a {asset_name} payment of {amount} {asset_name}!<br/><br/>Message: {payment.message}"
     send_email(logger, f"Received {asset_name} payment", msg, payment.email)
 
 def email_user_create_request(logger, req, minutes_expiry):
@@ -66,6 +73,11 @@ def sms_payment_claim(logger, asset_name, payment, hours_expiry):
     msg = f"You have a {asset_name} payment waiting! Claim your payment (within {hours_expiry} hours) {url}"
     email = str(payment.mobile) + "@transmitsms.com"
     send_email(logger, "{asset_name} Payment", msg, email)
+
+def email_referral(logger, referral):
+    #TODO: implement qrcode and ecommerce link
+    msg = "TODO: not yet implemented {qrcode}, {ecom_link}"
+    send_email(logger, "Referral", msg, referral.recipient)
 
 def email_stash_save_request(logger, email, req, minutes_expiry):
     url = url_for("stash_bp.stash_save_confirm", token=req.token, secret=req.secret, _external=True)

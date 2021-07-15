@@ -7,7 +7,6 @@ import sys
 import logging
 import json
 import datetime
-import decimal
 from urllib.parse import urlparse
 import math
 
@@ -20,13 +19,12 @@ import requests
 import pywaves
 
 from app_core import app, db, socketio, SERVER_MODE_WAVES, SERVER_MODE_PAYDB
-from models import Role, User, WavesTx, Proposal, Payment, Topic, Category, PushNotificationLocation
+from models import Role, User, WavesTx, Proposal, Payment, Topic, PushNotificationLocation
 import utils
 from fcm import FCM
-import web_utils
-from web_utils import bad_request, get_json_params, get_json_params_optional, request_get_signature, check_auth
+from web_utils import bad_request, get_json_params, get_json_params_optional
 import paydb_core
-import reward_endpoint
+from reward_endpoint import reward, reward_create
 # pylint: disable=unused-import
 import admin
 
@@ -59,8 +57,7 @@ if app.config["USE_STASH"]:
     from stash_endpoint import stash_bp
     app.register_blueprint(stash_bp, url_prefix='/stash')
 # reward blueprint
-from reward_endpoint import reward
-    app.register_blueprint(reward, url_prefix='/reward')
+app.register_blueprint(reward, url_prefix='/reward')
 
 def logger_setup(level, handler):
     logger.setLevel(level)
@@ -228,8 +225,7 @@ def process_proposals():
 
 @app.template_filter()
 def int2asset(num):
-    num = decimal.Decimal(num)
-    return num/100
+    return utils.int2asset(num)
 
 #
 # Flask views
@@ -357,7 +353,7 @@ def claim_payment(token):
 
 @app.route("/payment_create", methods=["POST"])
 def payment_create():
-    return reward_endpoint.reward_create()
+    return reward_create()
 
 @app.route("/dashboard")
 @roles_accepted(Role.ROLE_ADMIN)

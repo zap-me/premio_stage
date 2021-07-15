@@ -19,12 +19,18 @@ from utils import log_socketio_version, setup_logging
 
 logger = logging.getLogger(__name__)
 
-if os.getenv("URL_SCHEMA"): URL_SCHEMA = os.getenv("URL_SCHEMA")
-else: URL_SCHEMA = "http"
-if os.getenv("WS_SCHEMA"): WS_SCHEMA = os.getenv("WS_SCHEMA")
-else: WS_SCHEMA = "ws"
-if os.getenv("SERVER_NAME"): SERVER_NAME = os.getenv("SERVER_NAME")
-else: SERVER_NAME = "localhost:5000"
+if os.getenv("URL_SCHEMA"):
+    URL_SCHEMA = os.getenv("URL_SCHEMA")
+else:
+    URL_SCHEMA = "http"
+if os.getenv("WS_SCHEMA"):
+    WS_SCHEMA = os.getenv("WS_SCHEMA")
+else:
+    WS_SCHEMA = "ws"
+if os.getenv("SERVER_NAME"):
+    SERVER_NAME = os.getenv("SERVER_NAME")
+else:
+    SERVER_NAME = "localhost:5000"
 
 URL_BASE = f"{URL_SCHEMA}://{SERVER_NAME}/"
 WS_URL = f"{WS_SCHEMA}://{SERVER_NAME}/"
@@ -255,6 +261,36 @@ def reward_create(args):
     check_request_status(r)
     print(r.text)
 
+def referral_create(args):
+    print(":: calling referral_create..")
+    r = reward_req("referral_create", {"recipient": args.recipient}, args.api_key_token, args.api_key_secret)
+    check_request_status(r)
+    print(r.text)
+
+def referral_remind(args):
+    print(":: calling referral_remind..")
+    r = reward_req("referral_remind", {"token": args.token}, args.api_key_token, args.api_key_secret)
+    check_request_status(r)
+    print(r.text)
+
+def referral_list(args):
+    print(":: calling referral_list..")
+    r = reward_req("referral_list", {}, args.api_key_token, args.api_key_secret)
+    check_request_status(r)
+    print(r.text)
+
+def referral_validate(args):
+    print(":: calling referral_validate..")
+    r = reward_req("referral_validate", {"token": args.token}, args.api_key_token, args.api_key_secret)
+    check_request_status(r)
+    print(r.text)
+
+def referral_claim(args):
+    print(":: calling referral_claim..")
+    r = reward_req("referral_claim", {"token": args.token}, args.api_key_token, args.api_key_secret)
+    check_request_status(r)
+    print(r.text)
+
 def stash_save(args):
     print(":: calling save..")
     r = stash_req("save", {"key": args.key, "email": args.email, "iv": args.iv, "cyphertext": args.cyphertext, "question": args.question})
@@ -267,6 +303,7 @@ def stash_save_check(args):
     check_request_status(r)
     print(r.text)
 
+# pylint: disable=too-many-branches
 def run_parser():
     # parse arguments
     parser = construct_parser()
