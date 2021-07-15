@@ -122,7 +122,8 @@ def referral_list():
     if not res:
         return bad_request(reason)
     refs = Referral.from_user(db.session, api_key.user)
-    return jsonify(refs)
+    refs = [ref.to_json() for ref in ref]
+    return jsonify(dict(referrals=refs))
 
 @paydb.route('/referral_validate', methods=['POST'])
 def referral_validate():
@@ -144,7 +145,7 @@ def referral_validate():
         return bad_request(web_utils.NOT_FOUND)
     if ref.status != ref.STATUS_CREATED:
         return bad_request(web_utils.NOT_FOUND)
-    return jsonify(ref)
+    return jsonify(dict(referral=ref.to_json()))
 
 @paydb.route('/referral_claim', methods=['POST'])
 def referral_claim():
@@ -169,4 +170,4 @@ def referral_claim():
     ref.status = ref.STATUS_CLAIMED
     db.session.add(ref)
     db.session.commit()
-    return jsonify(ref)
+    return jsonify(dict(referral=ref.to_json()))

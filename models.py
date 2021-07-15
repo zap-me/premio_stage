@@ -1181,6 +1181,17 @@ class PushNotificationLocationModelView(RestrictedModelView):
     column_list = ['date', 'location', 'fcm_registration_token']
     column_formatters = {'location': _format_location}
 
+class ReferralSchema(Schema):
+    token = fields.String()
+    date = fields.Date()
+    recipient = fields.String()
+    reward_sender_type = fields.String()
+    reward_sender = fields.Integer()
+    reward_recipient_type = fields.String()
+    reward_recipient = fields.Integer()
+    recipient_min_spend = fields.Integer()
+    status = fields.String()
+
 class Referral(db.Model):
     STATUS_CREATED = 'created'
     STATUS_CLAIMED = 'claimed'
@@ -1214,6 +1225,10 @@ class Referral(db.Model):
         self.reward_recipient = reward_recipient
         self.recipient_min_spend = recipient_min_spend
         self.status = STATUS_CREATED
+
+    def to_json(self):
+        ref_schema = ReferralSchema()
+        return ref_schema.dump(self).data
 
     @classmethod
     def from_token(cls, session, token):
