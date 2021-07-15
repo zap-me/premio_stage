@@ -1186,20 +1186,29 @@ class Referral(db.Model):
     STATUS_CLAIMED = 'claimed'
     STATUS_DELETED = 'deleted'
 
+    REWARD_TYPE_PERCENT = 'percent'
+    REWARD_TYPE_FIXED = 'fixed'
+
     id = db.Column(db.Integer, primary_key=True)
 
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     user = db.relationship('User', backref=db.backref('referrals', lazy='dynamic'))
     date = db.Column(db.DateTime(), nullable=False)
     recipient = db.Column(db.String, nullable=False)
+    reward_sender_type = db.Column(db.String, nullable=False)
     reward_sender = db.Column(db.Integer, nullable=False)
+    reward_recipient_type = db.Column(db.String, nullable=False)
     reward_recipient = db.Column(db.Integer, nullable=False)
+    recipient_min_spend = db.Column(db.Integer, nullable=False)
     status = db.Column(db.String, nullable=False)
 
-    def __init__(self, user, recipient, reward_sender, reward_recipient):
+    def __init__(self, user, recipient, reward_sender_type, reward_sender, reward_recipient_type, reward_recipient, recipient_min_spend):
         self.user = user
         self.date = datetime.datetime.now()
         self.recipient = recipient
+        self.reward_sender_type = reward_sender_type
         self.reward_sender = reward_sender
+        self.reward_recipient_type = reward_recipient_type
         self.reward_recipient = reward_recipient
+        self.recipient_min_spend = recipient_min_spend
         self.status = STATUS_CREATED

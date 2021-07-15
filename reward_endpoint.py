@@ -95,6 +95,8 @@ def referral_remind():
     #ref = Referral.from_token_user(db.session, token, api_key.user)
     #if not ref:
     #    return bad_request(web_utils.NOT_FOUND)
+    #if ref.status != ref.STATUS_CREATED:
+    #    return bad_request(web_utils.NOT_FOUND)
     #utils.email_referral(logger, ref)
     #return 'ok'
     return bad_request(web_utils.NOT_IMPLEMENTED)
