@@ -1191,18 +1191,20 @@ class Referral(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
 
+    token = db.Column(db.String(255), unique=True, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     user = db.relationship('User', backref=db.backref('referrals', lazy='dynamic'))
     date = db.Column(db.DateTime(), nullable=False)
     recipient = db.Column(db.String, nullable=False)
-    reward_sender_type = db.Column(db.String, nullable=False)
+    reward_sender_type = db.Column(db.String(255), nullable=False)
     reward_sender = db.Column(db.Integer, nullable=False)
-    reward_recipient_type = db.Column(db.String, nullable=False)
+    reward_recipient_type = db.Column(db.String(255), nullable=False)
     reward_recipient = db.Column(db.Integer, nullable=False)
     recipient_min_spend = db.Column(db.Integer, nullable=False)
     status = db.Column(db.String, nullable=False)
 
     def __init__(self, user, recipient, reward_sender_type, reward_sender, reward_recipient_type, reward_recipient, recipient_min_spend):
+        self.token = secrets.token_urlsafe(8)
         self.user = user
         self.date = datetime.datetime.now()
         self.recipient = recipient
@@ -1212,3 +1214,15 @@ class Referral(db.Model):
         self.reward_recipient = reward_recipient
         self.recipient_min_spend = recipient_min_spend
         self.status = STATUS_CREATED
+
+    @classmethod
+    def from_token(cls, session, token):
+        return session.query(cls).filter(cls.token == token).first()
+
+    @classmethod
+    def from_token_user(cls, session, token, user):
+        return session.query(cls).filter(and_(cls.token == token, cls.user_id == user.id)).first()
+
+    @classmethod
+    def from_user(cls, session, user):
+        return session.query(cls).filter(cls.user_id == user.id).all()
