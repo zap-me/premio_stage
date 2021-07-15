@@ -1,5 +1,4 @@
 # pylint: disable=unbalanced-tuple-unpacking
-# pylint: disable-msg=too-many-function-args
 
 import logging
 import time
@@ -124,7 +123,7 @@ def user_registration_confirm(token=None):
     return redirect('/')
 
 @paydb.route('/api_key_create', methods=['POST'])
-@limiter.limit("3/hour")
+@limiter.limit("10/hour")
 def api_key_create():
     content = request.get_json(force=True)
     if content is None:
@@ -152,7 +151,7 @@ def api_key_create():
     return jsonify(dict(token=api_key.token, secret=api_key.secret, device_name=api_key.device_name, expiry=api_key.expiry))
 
 @paydb.route('/api_key_request', methods=['POST'])
-@limiter.limit("3/hour")
+@limiter.limit("10/hour")
 def api_key_request():
     content = request.get_json(force=True)
     if content is None:
@@ -175,7 +174,7 @@ def api_key_request():
     return jsonify(dict(token=req.token))
 
 @paydb.route('/api_key_claim', methods=['POST'])
-@limiter.limit("3/hour")
+@limiter.limit("10/hour")
 def api_key_claim():
     content = request.get_json(force=True)
     if content is None:
@@ -198,7 +197,7 @@ def api_key_claim():
     return jsonify(dict(token=api_key.token, secret=api_key.secret, device_name=api_key.device_name, expiry=api_key.expiry))
 
 @paydb.route('/api_key_confirm/<token>/<secret>', methods=['GET', 'POST'])
-@limiter.limit("3/hour")
+@limiter.limit("2/minute")
 def api_key_confirm(token=None, secret=None):
     req = ApiKeyRequest.from_token(db.session, token)
     if not req:
@@ -237,7 +236,6 @@ def api_key_confirm(token=None, secret=None):
 def user_info():
     sig = request_get_signature()
     content = request.get_json(force=True)
-    print(content)
     if content is None:
         return bad_request(web_utils.INVALID_JSON)
     params, err_response = get_json_params(content, ["api_key", "nonce", "email"])
@@ -263,7 +261,7 @@ def user_info():
     return jsonify(dict(email=user.email, balance=-1, photo=user.photo, photo_type=user.photo_type, roles=[], permissions=[]))
 
 @paydb.route('/user_reset_password', methods=['GET', 'POST'])
-@limiter.limit("3/hour")
+@limiter.limit("10/hour")
 def user_reset_password():
     sig = request_get_signature()
     content = request.get_json(force=True)
@@ -277,12 +275,11 @@ def user_reset_password():
     if not res:
         return bad_request(reason)
     user = api_key.user
-    #### separate DB for the instructions(flask-security)
     send_reset_password_instructions(user)
     return 'reset password instructions sent'
 
 @paydb.route('/user_update_email', methods=['GET', 'POST'])
-@limiter.limit("3/hour")
+@limiter.limit("10/hour")
 def user_update_email():
     sig = request_get_signature()
     content = request.get_json(force=True)
@@ -309,7 +306,7 @@ def user_update_email():
     return 'ok'
 
 @paydb.route('/user_update_email_confirm/<token>', methods=['GET'])
-@limiter.limit("3/hour")
+@limiter.limit("10/hour")
 def user_update_email_confirm(token=None):
     req = UserUpdateEmailRequest.from_token(db.session, token)
     if not req:
@@ -331,8 +328,8 @@ def user_update_email_confirm(token=None):
     flash('User email updated.', 'success')
     return redirect('/')
 
-@paydb.route('/user_update_password', methods=['GET', 'POST'])
-@limiter.limit("3/hour")
+@paydb.route('/user_update_password', methods=['POST'])
+@limiter.limit("10/hour")
 def user_update_password():
     sig = request_get_signature()
     content = request.get_json(force=True)
@@ -355,8 +352,8 @@ def user_update_password():
     db.session.commit()
     return 'password changed.'
 
-@paydb.route('/user_update_photo', methods=['GET', 'POST'])
-@limiter.limit("3/day")
+@paydb.route('/user_update_photo', methods=['POST'])
+@limiter.limit("10/hour")
 def user_update_photo():
     sig = request_get_signature()
     content = request.get_json(force=True)
@@ -435,4 +432,3 @@ def transaction_info():
     if tx.user != api_key.user and tx.recipient != api_key.user:
         return bad_request(web_utils.UNAUTHORIZED)
     return jsonify(dict(tx=tx.to_json()))
-
