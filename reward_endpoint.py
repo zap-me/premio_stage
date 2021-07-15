@@ -167,6 +167,7 @@ def referral_claim():
         return bad_request(web_utils.NOT_FOUND)
     if ref.status != ref.STATUS_CREATED:
         return bad_request(web_utils.NOT_FOUND)
+    #TODO: send referral rewards
     ref.status = ref.STATUS_CLAIMED
     db.session.add(ref)
     db.session.commit()
