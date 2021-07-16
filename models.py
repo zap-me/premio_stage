@@ -1199,6 +1199,7 @@ class Referral(db.Model):
 
     REWARD_TYPE_PERCENT = 'percent'
     REWARD_TYPE_FIXED = 'fixed'
+    REWARD_TYPES_ALL = [REWARD_TYPE_PERCENT, REWARD_TYPE_FIXED]
 
     id = db.Column(db.Integer, primary_key=True)
 
@@ -1215,6 +1216,8 @@ class Referral(db.Model):
     status = db.Column(db.String, nullable=False)
 
     def __init__(self, user, recipient, reward_sender_type, reward_sender, reward_recipient_type, reward_recipient, recipient_min_spend):
+        assert reward_sender_type in self.REWARD_TYPES_ALL
+        assert reward_recipient_type in self.REWARD_TYPES_ALL
         self.token = secrets.token_urlsafe(8)
         self.user = user
         self.date = datetime.datetime.now()

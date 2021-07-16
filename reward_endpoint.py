@@ -8,7 +8,7 @@ from flask import Blueprint, request, jsonify
 import web_utils
 from web_utils import bad_request, get_json_params, request_get_signature, check_auth, auth_request, auth_request_get_single_param
 import utils
-from app_core import db, limiter
+from app_core import app, db, limiter
 from models import User, Role, Category, Proposal, Payment, Referral
 
 logger = logging.getLogger(__name__)
@@ -61,12 +61,11 @@ def referral_create():
     if user:
         time.sleep(5)
         return bad_request(web_utils.USER_EXISTS)
-    #TODO: allow customisable referral params
-    ref_reward_sender_type = Referral.REWARD_TYPE_FIXED
-    ref_reward_sender = 1000
-    ref_reward_recipient_type = Referral.REWARD_TYPE_FIXED
-    ref_reward_recipient = 1000
-    ref_recipient_min_spend = 5000
+    ref_reward_sender_type = app.config["REFERRAL_REWARD_TYPE_SENDER"]
+    ref_reward_sender = app.config["REFERRAL_REWARD_SENDER"]
+    ref_reward_recipient_type = app.config["REFERRAL_REWARD_TYPE_RECIPIENT"]
+    ref_reward_recipient = app.config["REFERRAL_REWARD_RECIPIENT"]
+    ref_recipient_min_spend = app.config["REFERRAL_RECIPIENT_MIN_SPEND"]
     ref = Referral(api_key.user, recipient, ref_reward_sender_type, ref_reward_sender, ref_reward_recipient_type, ref_reward_recipient, ref_recipient_min_spend)
     utils.email_referral(logger, ref)
     db.session.add(ref)

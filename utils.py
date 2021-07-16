@@ -75,9 +75,22 @@ def sms_payment_claim(logger, asset_name, payment, hours_expiry):
     send_email(logger, "{asset_name} Payment", msg, email)
 
 def email_referral(logger, referral):
-    #TODO: implement qrcode and ecommerce link
-    msg = "TODO: not yet implemented {qrcode}, {ecom_link}"
-    send_email(logger, "Referral", msg, referral.recipient)
+    shop_name = app.config["REFERRAL_SHOP_NAME"]
+    qrcode_svg = qrcode_svg_create(referral.token, box_size=4)
+    ecom_link = app.config["REFERRAL_ECOMMERCE_URL"]
+    if ecom_link:
+        ecom_link += f"?premio_referral={referral.token}"
+    sender_name = referral.user.first_name
+    asset_name = app.config["ASSET_NAME"]
+    spend = int2asset(referral.recipient_min_spend)
+    spend_asset = app.config["REFERRAL_SPEND_ASSET"]
+    gift = f"Spend {spend} {spend_asset} and recieve {int2asset(referral.reward_recipient)} {asset_name}"
+    if referral.reward_recipient_type == referral.REWARD_TYPE_PERCENT:
+        gift = f"Spend {spend} {spend_asset} or more and recieve {referral.reward_recipient}% off your purchase price"
+    msg = f"You have been sent a referral from {sender_name}<br/><br/>{gift}<br/<br/>{qrcode_svg}<br/><br/>"
+    if ecom_link:
+        msg += ecom_link
+    send_email(logger, f"{shop_name} Referral", msg, referral.recipient)
 
 def email_stash_save_request(logger, email, req, minutes_expiry):
     url = url_for("stash_bp.stash_save_confirm", token=req.token, secret=req.secret, _external=True)
