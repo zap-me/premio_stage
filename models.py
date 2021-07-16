@@ -452,6 +452,11 @@ class RestrictedModelView(BaseModelView):
                 current_user.has_role(Role.ROLE_ADMIN))
 
 class BaseOnlyUserOwnedModelView(BaseModelView):
+    can_create = False
+    can_delete = False
+    can_edit = False
+    column_exclude_list = ['password', 'secret']
+
     def is_accessible(self):
         return (current_user.is_active and
                 current_user.is_authenticated)
