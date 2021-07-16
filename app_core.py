@@ -58,10 +58,14 @@ if os.getenv("GOOGLE_PLAY_STORE_URL"):
 else:
     app.config["GOOGLE_PLAY_STORE_URL"] = "https://play.google.com/store/apps/details?id=me.zap.zapapp"
 
-if os.getenv("REFERRAL_REWARD_TYPE_SENDER"):
-    app.config["REFERRAL_REWARD_TYPE_SENDER"] = os.getenv("REFERRAL_REWARD_TYPE_SENDER")
+if os.getenv("USE_REFERRALS"):
+    app.config["USE_REFERRALS"] = True
 else:
-    app.config["REFERRAL_REWARD_TYPE_SENDER"] = 'fixed'
+    app.config["USE_REFERRALS"] = False
+#if os.getenv("REFERRAL_REWARD_TYPE_SENDER"):
+#    app.config["REFERRAL_REWARD_TYPE_SENDER"] = os.getenv("REFERRAL_REWARD_TYPE_SENDER")
+#else:
+app.config["REFERRAL_REWARD_TYPE_SENDER"] = 'fixed'
 if os.getenv("REFERRAL_REWARD_SENDER"):
     app.config["REFERRAL_REWARD_SENDER"] = int(os.getenv("REFERRAL_REWARD_SENDER"))
 else:

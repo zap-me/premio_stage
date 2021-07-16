@@ -344,6 +344,11 @@ categories_proposals = db.Table(
 )
 
 class Category(db.Model):
+    CATEGORY_MARKETING = 'marketing'
+    CATEGORY_MISC = 'misc'
+    CATEGORY_TESTING = 'testing'
+    CATEGORY_REFERRAL = 'referral'
+
     id = db.Column(db.Integer(), primary_key=True)
     name = db.Column(db.String(80), unique=True)
     description = db.Column(db.String(255))
@@ -1216,7 +1221,7 @@ class Referral(db.Model):
     status = db.Column(db.String, nullable=False)
 
     def __init__(self, user, recipient, reward_sender_type, reward_sender, reward_recipient_type, reward_recipient, recipient_min_spend):
-        assert reward_sender_type in self.REWARD_TYPES_ALL
+        assert reward_sender_type == self.REWARD_TYPE_FIXED
         assert reward_recipient_type in self.REWARD_TYPES_ALL
         self.token = secrets.token_urlsafe(8)
         self.user = user

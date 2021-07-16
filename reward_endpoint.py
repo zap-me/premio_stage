@@ -14,6 +14,19 @@ from models import User, Role, Category, Proposal, Payment, Referral
 logger = logging.getLogger(__name__)
 reward = Blueprint('reward', __name__, template_folder='templates')
 limiter.limit("100/minute")(reward)
+use_referrals = app.config["USE_REFERRALS"]
+
+def _reward_create(user, reason, category, recipient, amount, message):
+    proposal = Proposal(user, reason)
+    proposal.categories.append(category)
+    proposal.authorize(user)
+    db.session.add(proposal)
+    email = recipient if utils.is_email(recipient) else None
+    mobile = recipient if utils.is_mobile(recipient) else None
+    address = recipient if utils.is_address(recipient) else None
+    payment = Payment(proposal, mobile, email, address, message, amount)
+    db.session.add(payment)
+    return proposal, payment
 
 #
 # Private (reward) API
@@ -37,20 +50,14 @@ def reward_create():
     cat = Category.from_name(db.session, category)
     if not cat:
         return bad_request(web_utils.INVALID_CATEGORY)
-    proposal = Proposal(api_key.user, reason)
-    proposal.categories.append(cat)
-    proposal.authorize(api_key.user)
-    db.session.add(proposal)
-    email = recipient if utils.is_email(recipient) else None
-    mobile = recipient if utils.is_mobile(recipient) else None
-    address = recipient if utils.is_address(recipient) else None
-    payment = Payment(proposal, mobile, email, address, message, amount)
-    db.session.add(payment)
+    proposal, payment = _reward_create(api_key.user, reason, cat, recipient, amount, message)
     db.session.commit()
-    return jsonify(dict(proposal=dict(reason=reason, category=category, status=proposal.status, payment=dict(amount=amount, email=email, mobile=mobile, address=address, message=message, status=payment.status))))
+    return jsonify(dict(proposal=dict(reason=reason, category=category, status=proposal.status, payment=dict(amount=amount, email=payment.email, mobile=payment.mobile, address=payment.recipient, message=message, status=payment.status))))
 
 @reward.route('/referral_create', methods=['POST'])
 def referral_create():
+    if not use_referrals:
+        return bad_request(web_utils.NOT_AVAILABLE)
     recipient, api_key, err_response = auth_request_get_single_param(db, "recipient")
     if err_response:
         return err_response
@@ -74,6 +81,8 @@ def referral_create():
 
 @reward.route('/referral_remind', methods=['POST'])
 def referral_remind():
+    if not use_referrals:
+        return bad_request(web_utils.NOT_AVAILABLE)
     token, api_key, err_response = auth_request_get_single_param(db, "token")
     if err_response:
         return err_response
@@ -87,6 +96,8 @@ def referral_remind():
 
 @reward.route('/referral_list', methods=['POST'])
 def referral_list():
+    if not use_referrals:
+        return bad_request(web_utils.NOT_AVAILABLE)
     api_key, err_response = auth_request(db)
     if err_response:
         return err_response
@@ -96,6 +107,8 @@ def referral_list():
 
 @reward.route('/referral_validate', methods=['POST'])
 def referral_validate():
+    if not use_referrals:
+        return bad_request(web_utils.NOT_AVAILABLE)
     token, api_key, err_response = auth_request_get_single_param(db, "token")
     if err_response:
         return err_response
@@ -110,6 +123,8 @@ def referral_validate():
 
 @reward.route('/referral_claim', methods=['POST'])
 def referral_claim():
+    if not use_referrals:
+        return bad_request(web_utils.NOT_AVAILABLE)
     token, api_key, err_response = auth_request_get_single_param(db, "token")
     if err_response:
         return err_response
@@ -120,7 +135,14 @@ def referral_claim():
         return bad_request(web_utils.NOT_FOUND)
     if ref.status != ref.STATUS_CREATED:
         return bad_request(web_utils.NOT_FOUND)
-    #TODO: send referral rewards
+    # send referral rewards
+    category = Category.from_name(db.session, Category.CATEGORY_REFERRAL)
+    if not category:
+        return bad_request(web_utils.INVALID_CATEGORY)
+    reason = f'{ref.token}: reward for referral'
+    _reward_create(api_key.user, reason, category, ref.recipient, ref.reward_sender, 'Thank you for referring a friend')
+    if ref.reward_recipient_type == ref.REWARD_TYPE_FIXED:
+        _reward_create(api_key.user, reason, category, ref.recipient, ref.reward_recipient, 'Thank you for using our service')
     ref.status = ref.STATUS_CLAIMED
     db.session.add(ref)
     db.session.commit()
