@@ -54,6 +54,21 @@ def reward_create():
     db.session.commit()
     return jsonify(dict(proposal=dict(reason=reason, category=category, status=proposal.status, payment=dict(amount=amount, email=payment.email, mobile=payment.mobile, address=payment.recipient, message=message, status=payment.status))))
 
+@reward.route('/referral_config', methods=['POST'])
+def referral_config():
+    if not use_referrals:
+        return bad_request(web_utils.NOT_AVAILABLE)
+    api_key, err_response = auth_request(db)
+    if err_response:
+        return err_response
+    reward_sender_type = app.config["REFERRAL_REWARD_TYPE_SENDER"]
+    reward_sender = app.config["REFERRAL_REWARD_SENDER"]
+    reward_recipient_type = app.config["REFERRAL_REWARD_TYPE_RECIPIENT"]
+    reward_recipient = app.config["REFERRAL_REWARD_RECIPIENT"]
+    recipient_min_spend = app.config["REFERRAL_RECIPIENT_MIN_SPEND"]
+    spend_asset = app.config["REFERRAL_SPEND_ASSET"]
+    return jsonify(dict(reward_sender_type=reward_sender_type, reward_sender=reward_sender, reward_recipient_type=reward_recipient_type, reward_recipient=reward_recipient, recipient_min_spend=recipient_min_spend, spend_asset=spend_asset))
+
 @reward.route('/referral_create', methods=['POST'])
 def referral_create():
     if not use_referrals:
@@ -68,12 +83,12 @@ def referral_create():
     if user:
         time.sleep(5)
         return bad_request(web_utils.USER_EXISTS)
-    ref_reward_sender_type = app.config["REFERRAL_REWARD_TYPE_SENDER"]
-    ref_reward_sender = app.config["REFERRAL_REWARD_SENDER"]
-    ref_reward_recipient_type = app.config["REFERRAL_REWARD_TYPE_RECIPIENT"]
-    ref_reward_recipient = app.config["REFERRAL_REWARD_RECIPIENT"]
-    ref_recipient_min_spend = app.config["REFERRAL_RECIPIENT_MIN_SPEND"]
-    ref = Referral(api_key.user, recipient, ref_reward_sender_type, ref_reward_sender, ref_reward_recipient_type, ref_reward_recipient, ref_recipient_min_spend)
+    reward_sender_type = app.config["REFERRAL_REWARD_TYPE_SENDER"]
+    reward_sender = app.config["REFERRAL_REWARD_SENDER"]
+    reward_recipient_type = app.config["REFERRAL_REWARD_TYPE_RECIPIENT"]
+    reward_recipient = app.config["REFERRAL_REWARD_RECIPIENT"]
+    recipient_min_spend = app.config["REFERRAL_RECIPIENT_MIN_SPEND"]
+    ref = Referral(api_key.user, recipient, reward_sender_type, reward_sender, reward_recipient_type, reward_recipient, recipient_min_spend)
     utils.email_referral(logger, ref)
     db.session.add(ref)
     db.session.commit()

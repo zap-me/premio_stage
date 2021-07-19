@@ -103,6 +103,10 @@ def construct_parser():
     parser_reward_create.add_argument("amount", metavar="AMOUNT", type=int, help="the payment amount (integer, cents)")
     parser_reward_create.add_argument("message", metavar="MESSAGE", type=str, help="the message for the recipient")
 
+    parser_referral_config = subparsers.add_parser("referral_config", help="Get the premio referral config")
+    parser_referral_config.add_argument("api_key_token", metavar="API_KEY_TOKEN", type=str, help="the API KEY token")
+    parser_referral_config.add_argument("api_key_secret", metavar="API_KEY_SECRET", type=str, help="the API KEY secret")
+
     parser_referral_create = subparsers.add_parser("referral_create", help="Create a premio referral")
     parser_referral_create.add_argument("api_key_token", metavar="API_KEY_TOKEN", type=str, help="the API KEY token")
     parser_referral_create.add_argument("api_key_secret", metavar="API_KEY_SECRET", type=str, help="the API KEY secret")
@@ -261,6 +265,12 @@ def reward_create(args):
     check_request_status(r)
     print(r.text)
 
+def referral_config(args):
+    print(":: calling referral_config..")
+    r = reward_req("referral_config", {}, args.api_key_token, args.api_key_secret)
+    check_request_status(r)
+    print(r.text)
+
 def referral_create(args):
     print(":: calling referral_create..")
     r = reward_req("referral_create", {"recipient": args.recipient}, args.api_key_token, args.api_key_secret)
@@ -331,6 +341,8 @@ def run_parser():
         function = transaction_info
     elif args.command == "reward_create":
         function = reward_create
+    elif args.command == "referral_config":
+        function = referral_config
     elif args.command == "referral_create":
         function = referral_create
     elif args.command == "referral_remind":
