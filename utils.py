@@ -6,13 +6,15 @@ import hashlib
 import logging
 from importlib.metadata import version
 import decimal
+import base64
 
 import pywaves
 from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail, From
+from sendgrid.helpers.mail import Mail, From, Attachment, FileContent, FileName, FileType, Disposition, ContentId
 from flask import url_for
 import qrcode
 import qrcode.image.svg
+import qrcode.image.pil
 
 from app_core import app
 
@@ -20,7 +22,19 @@ def int2asset(num):
     num = decimal.Decimal(num)
     return num/100
 
-def send_email(logger, subject, msg, recipient=None):
+def _attachment(b64data, mime_type, filename, content_id, disposition='attachment'):
+    attachment = Attachment()
+    attachment.file_content = FileContent(b64data)
+    attachment.file_type = FileType(mime_type)
+    attachment.file_name = FileName(filename)
+    attachment.disposition = Disposition(disposition)
+    attachment.content_id = ContentId(content_id)
+    return attachment
+
+def _attachment_inline(b64data, mime_type, filename, content_id):
+    return _attachment(b64data, mime_type, filename, content_id, 'inline')
+
+def send_email(logger, subject, msg, recipient=None, attachment=None):
     if not recipient:
         recipient = app.config["ADMIN_EMAIL"]
     from_email = From(app.config["FROM_EMAIL"], app.config["FROM_NAME"])
@@ -30,6 +44,8 @@ def send_email(logger, subject, msg, recipient=None):
     logo_src = app.config["LOGO_EMAIL_SRC"]
     html = html.replace("<LOGOSRC/>", logo_src).replace("<EMAILCONTENT/>", msg)
     message = Mail(from_email=from_email, to_emails=recipient, subject=subject, html_content=html)
+    if attachment:
+        message.attachment = attachment
     try:
         sg = SendGridAPIClient(app.config["MAIL_SENDGRID_API_KEY"])
         sg.send(message)
@@ -76,21 +92,24 @@ def sms_payment_claim(logger, asset_name, payment, hours_expiry):
 
 def email_referral(logger, referral):
     shop_name = app.config["REFERRAL_STORE_NAME"]
-    qrcode_svg = qrcode_svg_create(referral.token, box_size=4)
+    qrcode_b64 = qrcode_pngb64_create(referral.token, box_size=4)
     ecom_link = app.config["REFERRAL_ECOMMERCE_URL"]
     if ecom_link:
         ecom_link += f"?premio_referral={referral.token}"
     sender_name = referral.user.first_name
+    if not sender_name:
+        sender_name = referral.user.email
     asset_name = app.config["ASSET_NAME"]
     spend = int2asset(referral.recipient_min_spend)
     spend_asset = app.config["REFERRAL_SPEND_ASSET"]
     gift = f"Spend {spend} {spend_asset} and recieve {int2asset(referral.reward_recipient)} {asset_name}"
     if referral.reward_recipient_type == referral.REWARD_TYPE_PERCENT:
         gift = f"Spend {spend} {spend_asset} or more and recieve {referral.reward_recipient}% off your purchase price"
-    msg = f"You have been sent a referral from {sender_name}<br/><br/>{gift}<br/<br/>{qrcode_svg}<br/><br/>"
+    msg = f"You have been recieved a referral from {sender_name}<br/><br/>{gift}<br/<br/><img src=\"cid:qrcode\"><br/><br/>"
     if ecom_link:
         msg += ecom_link
-    send_email(logger, f"{shop_name} Referral", msg, referral.recipient)
+    attachment = _attachment_inline(qrcode_b64, 'image/png', 'qrcode.png', 'qrcode')
+    send_email(logger, f"{shop_name} Referral", msg, referral.recipient, attachment)
 
 def email_stash_save_request(logger, email, req, minutes_expiry):
     url = url_for("stash_bp.stash_save_confirm", token=req.token, secret=req.secret, _external=True)
@@ -121,13 +140,23 @@ def is_address(val):
     except: # pylint: disable=bare-except
         return False
 
-def qrcode_svg_create(data, box_size=10):
-    factory = qrcode.image.svg.SvgPathImage
+def qrcode_create(factory, data, box_size):
     img = qrcode.make(data, image_factory=factory, box_size=box_size)
     output = io.BytesIO()
     img.save(output)
+    return output
+
+def qrcode_svg_create(data, box_size=10):
+    factory = qrcode.image.svg.SvgPathImage
+    output = qrcode_create(factory, data, box_size)
     svg = output.getvalue().decode('utf-8')
     return svg
+
+def qrcode_pngb64_create(data, box_size=10):
+    factory = qrcode.image.pil.PilImage
+    output = qrcode_create(factory, data, box_size)
+    b64 = base64.b64encode(output.getvalue()).decode('utf-8')
+    return b64
 
 def str2bytes(string):
     # warning this method is flawed with some input
