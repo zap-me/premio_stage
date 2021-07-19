@@ -75,7 +75,7 @@ def sms_payment_claim(logger, asset_name, payment, hours_expiry):
     send_email(logger, "{asset_name} Payment", msg, email)
 
 def email_referral(logger, referral):
-    shop_name = app.config["REFERRAL_SHOP_NAME"]
+    shop_name = app.config["REFERRAL_STORE_NAME"]
     qrcode_svg = qrcode_svg_create(referral.token, box_size=4)
     ecom_link = app.config["REFERRAL_ECOMMERCE_URL"]
     if ecom_link:

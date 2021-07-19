@@ -102,7 +102,7 @@ def referral_list():
     if err_response:
         return err_response
     refs = Referral.from_user(db.session, api_key.user)
-    refs = [ref.to_json() for ref in ref]
+    refs = [ref.to_json() for ref in refs]
     return jsonify(dict(referrals=refs))
 
 @reward.route('/referral_validate', methods=['POST'])
