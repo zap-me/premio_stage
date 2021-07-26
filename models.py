@@ -274,7 +274,8 @@ class PayDbTransaction(db.Model):
     def __init__(self, action, sender, recipient, amount, attachment):
         self.token = secrets.token_urlsafe(8)
         self.timestamp = int(time.time())
-        self.date = datetime.datetime.now()
+        #self.date = datetime.datetime.now()
+        self.date = datetime.datetime.fromtimestamp(self.timestamp)
         self.action = action
         self.sender = sender
         self.recipient = recipient
