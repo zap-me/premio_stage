@@ -85,11 +85,6 @@ class User(db.Model, UserMixin):
     confirmed_at = db.Column(db.DateTime())
     roles = db.relationship('Role', secondary=roles_users,
                             backref=db.backref('users', lazy='dynamic'))
-    mobile_number = db.Column(db.String(255))
-    address = db.Column(db.String(255))
-    tf_totp_secret = db.Column(db.String(255))
-    tf_primary_method = db.Column(db.String(255))
-    tf_phone_number = db.Column(db.String(255))
     photo = db.Column(db.String())
     photo_type = db.Column(db.String(255))
 
@@ -113,8 +108,6 @@ class UserCreateRequest(db.Model):
     first_name = db.Column(db.String(255))
     last_name = db.Column(db.String(255))
     email = db.Column(db.String(255))
-    mobile_number = db.Column(db.String(255))
-    address = db.Column(db.String(255))
     photo = db.Column(db.String())
     photo_type = db.Column(db.String(255))
     password = db.Column(db.String(255))
@@ -526,7 +519,6 @@ def format_amount(self, context, model, name):
 
 def format_date(self, context, model, name):
     if model.date:
-        #return datetime.datetime.fromtimestamp(model.timestamp).strftime('%Y.%m.%d %H:%M')
         format_curdate = model.date
         return format_curdate.strftime('%Y.%m.%d %H:%M')
     return None
