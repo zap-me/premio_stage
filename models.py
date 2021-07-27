@@ -55,6 +55,7 @@ class Role(db.Model, RoleMixin):
     ROLE_ADMIN = 'admin'
     ROLE_PROPOSER = 'proposer'
     ROLE_AUTHORIZER = 'authorizer'
+    ROLE_REFERRAL_CLAIMER = 'referral_claimer'
 
     id = db.Column(db.Integer(), primary_key=True)
     name = db.Column(db.String(80), unique=True)
@@ -74,6 +75,8 @@ class User(db.Model, UserMixin):
     last_name = db.Column(db.String(255))
     email = db.Column(db.String(255), unique=True, nullable=False)
     password = db.Column(db.String(255))
+    mobile_number = db.Column(db.String(255))
+    address = db.Column(db.String(255))
     last_login_at = db.Column(db.DateTime())
     current_login_at = db.Column(db.DateTime())
     last_login_ip = db.Column(db.String(100))
@@ -82,6 +85,9 @@ class User(db.Model, UserMixin):
     active = db.Column(db.Boolean())
     fs_uniquifier = db.Column(db.String(255), unique=True, nullable=False)
     confirmed_at = db.Column(db.DateTime())
+    tf_totp_secret = db.Column(db.String(255))
+    tf_primary_method = db.Column(db.String(255))
+    tf_phone_number = db.Column(db.String(255))
     roles = db.relationship('Role', secondary=roles_users,
                             backref=db.backref('users', lazy='dynamic'))
     photo = db.Column(db.String())
@@ -107,16 +113,20 @@ class UserCreateRequest(db.Model):
     first_name = db.Column(db.String(255))
     last_name = db.Column(db.String(255))
     email = db.Column(db.String(255))
+    mobile_number = db.Column(db.String(255))
+    address = db.Column(db.String(255))
     photo = db.Column(db.String())
     photo_type = db.Column(db.String(255))
     password = db.Column(db.String(255))
     expiry = db.Column(db.DateTime())
 
-    def __init__(self, first_name, last_name, email, photo, photo_type, password):
+    def __init__(self, first_name, last_name, email, mobile_number, address, photo, photo_type, password):
         self.token = secrets.token_urlsafe(8)
         self.first_name = first_name
         self.last_name = last_name
         self.email = email
+        self.mobile_number = mobile_number
+        self.address = address
         self.photo = photo
         self.photo_type = photo_type
         self.password = password
@@ -343,6 +353,11 @@ categories_proposals = db.Table(
 )
 
 class Category(db.Model):
+    CATEGORY_MARKETING = 'marketing'
+    CATEGORY_MISC = 'misc'
+    CATEGORY_TESTING = 'testing'
+    CATEGORY_REFERRAL = 'referral'
+
     id = db.Column(db.Integer(), primary_key=True)
     name = db.Column(db.String(80), unique=True)
     description = db.Column(db.String(255))
@@ -446,6 +461,11 @@ class RestrictedModelView(BaseModelView):
                 current_user.has_role(Role.ROLE_ADMIN))
 
 class BaseOnlyUserOwnedModelView(BaseModelView):
+    can_create = False
+    can_delete = False
+    can_edit = False
+    column_exclude_list = ['password', 'secret']
+
     def is_accessible(self):
         return (current_user.is_active and
                 current_user.is_authenticated)
@@ -1179,3 +1199,67 @@ class PushNotificationLocationModelView(RestrictedModelView):
 
     column_list = ['date', 'location', 'fcm_registration_token']
     column_formatters = {'location': _format_location}
+
+class ReferralSchema(Schema):
+    token = fields.String()
+    date = fields.Date()
+    recipient = fields.String()
+    reward_sender_type = fields.String()
+    reward_sender = fields.Integer()
+    reward_recipient_type = fields.String()
+    reward_recipient = fields.Integer()
+    recipient_min_spend = fields.Integer()
+    status = fields.String()
+
+class Referral(db.Model):
+    STATUS_CREATED = 'created'
+    STATUS_CLAIMED = 'claimed'
+    STATUS_DELETED = 'deleted'
+
+    REWARD_TYPE_PERCENT = 'percent'
+    REWARD_TYPE_FIXED = 'fixed'
+    REWARD_TYPES_ALL = [REWARD_TYPE_PERCENT, REWARD_TYPE_FIXED]
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    token = db.Column(db.String(255), unique=True, nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user = db.relationship('User', backref=db.backref('referrals', lazy='dynamic'))
+    date = db.Column(db.DateTime(), nullable=False)
+    recipient = db.Column(db.String, nullable=False)
+    reward_sender_type = db.Column(db.String(255), nullable=False)
+    reward_sender = db.Column(db.Integer, nullable=False)
+    reward_recipient_type = db.Column(db.String(255), nullable=False)
+    reward_recipient = db.Column(db.Integer, nullable=False)
+    recipient_min_spend = db.Column(db.Integer, nullable=False)
+    status = db.Column(db.String, nullable=False)
+
+    def __init__(self, user, recipient, reward_sender_type, reward_sender, reward_recipient_type, reward_recipient, recipient_min_spend):
+        assert reward_sender_type == self.REWARD_TYPE_FIXED
+        assert reward_recipient_type in self.REWARD_TYPES_ALL
+        self.token = secrets.token_urlsafe(8)
+        self.user = user
+        self.date = datetime.datetime.now()
+        self.recipient = recipient
+        self.reward_sender_type = reward_sender_type
+        self.reward_sender = reward_sender
+        self.reward_recipient_type = reward_recipient_type
+        self.reward_recipient = reward_recipient
+        self.recipient_min_spend = recipient_min_spend
+        self.status = self.STATUS_CREATED
+
+    def to_json(self):
+        ref_schema = ReferralSchema()
+        return ref_schema.dump(self).data
+
+    @classmethod
+    def from_token(cls, session, token):
+        return session.query(cls).filter(cls.token == token).first()
+
+    @classmethod
+    def from_token_user(cls, session, token, user):
+        return session.query(cls).filter(and_(cls.token == token, cls.user_id == user.id)).first()
+
+    @classmethod
+    def from_user(cls, session, user):
+        return session.query(cls).filter(cls.user_id == user.id).all()

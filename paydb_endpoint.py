@@ -7,18 +7,20 @@ import json
 
 from flask import Blueprint, request, jsonify, flash, redirect, render_template
 import flask_security
-from flask_security.utils import encrypt_password
+from flask_security.utils import encrypt_password, verify_password
+from flask_security.recoverable import send_reset_password_instructions
 from flask_socketio import Namespace, emit, join_room, leave_room
 
 import web_utils
-from web_utils import bad_request, get_json_params, request_get_signature, check_auth
+from web_utils import bad_request, get_json_params, request_get_signature, check_auth, auth_request, auth_request_get_single_param
 import utils
-from app_core import db, socketio
+from app_core import db, socketio, limiter
 from models import user_datastore, User, UserCreateRequest, UserUpdateEmailRequest, Permission, ApiKey, ApiKeyRequest, PayDbTransaction
 import paydb_core
 
 logger = logging.getLogger(__name__)
 paydb = Blueprint('paydb', __name__, template_folder='templates')
+limiter.limit("100/minute")(paydb)
 ws_sids = {}
 
 #
@@ -70,31 +72,34 @@ socketio.on_namespace(PayDbNamespace(NS))
 #
 
 @paydb.route('/user_register', methods=['POST'])
+@limiter.limit("2/minute;40/hour")
 def user_register():
     content = request.get_json(force=True)
     if content is None:
         return bad_request(web_utils.INVALID_JSON)
-    params, err_response = get_json_params(content, ["email", "password", "first_name", "last_name", "photo", "photo_type"])
+    params, err_response = get_json_params(content, ["email", "password", "first_name", "last_name", "mobile_number", "address", "photo", "photo_type"])
     if err_response:
         return err_response
-    email, password, first_name, last_name, photo, photo_type = params
+    email, password, first_name, last_name, mobile_number, address, photo, photo_type = params
     if not utils.is_email(email):
         return bad_request(web_utils.INVALID_EMAIL)
+    email = email.lower()
     if not password:
         return bad_request(web_utils.EMPTY_PASSWORD)
     if photo and len(photo) > 50000:
         return bad_request(web_utils.PHOTO_DATA_LARGE)
-    req = UserCreateRequest(first_name, last_name, email, photo, photo_type, encrypt_password(password))
+    req = UserCreateRequest(first_name, last_name, email, mobile_number, address, photo, photo_type, encrypt_password(password))
     user = User.from_email(db.session, email)
     if user:
         time.sleep(5)
-        return 'ok'
+        return bad_request(web_utils.USER_EXISTS)
     utils.email_user_create_request(logger, req, req.MINUTES_EXPIRY)
     db.session.add(req)
     db.session.commit()
     return 'ok'
 
 @paydb.route('/user_registration_confirm/<token>', methods=['GET'])
+@limiter.limit("2/minute;40/hour")
 def user_registration_confirm(token=None):
     req = UserCreateRequest.from_token(db.session, token)
     if not req:
@@ -109,6 +114,8 @@ def user_registration_confirm(token=None):
         flash('User registration expired.', 'danger')
         return redirect('/')
     user = user_datastore.create_user(email=req.email, password=req.password, first_name=req.first_name, last_name=req.last_name)
+    user.mobile_number = req.mobile_number
+    user.address = req.address
     user.photo = req.photo
     user.photo_type = req.photo_type
     user.confirmed_at = now
@@ -118,6 +125,7 @@ def user_registration_confirm(token=None):
     return redirect('/')
 
 @paydb.route('/api_key_create', methods=['POST'])
+@limiter.limit("10/hour")
 def api_key_create():
     content = request.get_json(force=True)
     if content is None:
@@ -126,6 +134,9 @@ def api_key_create():
     if err_response:
         return err_response
     email, password, device_name = params
+    if not email:
+        return bad_request(web_utils.INVALID_EMAIL)
+    email = email.lower()
     user = User.from_email(db.session, email)
     if not user:
         time.sleep(5)
@@ -142,6 +153,7 @@ def api_key_create():
     return jsonify(dict(token=api_key.token, secret=api_key.secret, device_name=api_key.device_name, expiry=api_key.expiry))
 
 @paydb.route('/api_key_request', methods=['POST'])
+@limiter.limit("10/hour")
 def api_key_request():
     content = request.get_json(force=True)
     if content is None:
@@ -150,6 +162,9 @@ def api_key_request():
     if err_response:
         return err_response
     email, device_name = params
+    if not email:
+        return bad_request(web_utils.INVALID_EMAIL)
+    email = email.lower()
     user = User.from_email(db.session, email)
     if not user:
         req = ApiKeyRequest(user, device_name)
@@ -161,6 +176,7 @@ def api_key_request():
     return jsonify(dict(token=req.token))
 
 @paydb.route('/api_key_claim', methods=['POST'])
+@limiter.limit("10/hour")
 def api_key_claim():
     content = request.get_json(force=True)
     if content is None:
@@ -183,26 +199,27 @@ def api_key_claim():
     return jsonify(dict(token=api_key.token, secret=api_key.secret, device_name=api_key.device_name, expiry=api_key.expiry))
 
 @paydb.route('/api_key_confirm/<token>/<secret>', methods=['GET', 'POST'])
+@limiter.limit("2/minute")
 def api_key_confirm(token=None, secret=None):
     req = ApiKeyRequest.from_token(db.session, token)
     if not req:
         time.sleep(5)
-        flash('API KEY request not found.', 'danger')
+        flash('Email login request not found.', 'danger')
         return redirect('/')
     if req.secret != secret:
-        flash('API KEY code invalid.', 'danger')
+        flash('Email login code invalid.', 'danger')
         return redirect('/')
     now = datetime.datetime.now()
     if now > req.expiry:
         time.sleep(5)
-        flash('API KEY request expired.', 'danger')
+        flash('Email login request expired.', 'danger')
         return redirect('/')
     if request.method == 'POST':
         confirm = request.form.get('confirm') == 'true'
         if not confirm:
             db.session.delete(req)
             db.session.commit()
-            flash('API KEY cancelled.', 'success')
+            flash('Email login cancelled.', 'success')
             return redirect('/')
         perms = request.form.getlist('perms')
         api_key = ApiKey(req.user, req.device_name)
@@ -213,25 +230,19 @@ def api_key_confirm(token=None, secret=None):
         db.session.add(req)
         db.session.add(api_key)
         db.session.commit()
-        flash('API KEY confirmed.', 'success')
+        flash('Email login confirmed.', 'success')
         return redirect('/')
     return render_template('paydb/api_key_confirm.html', req=req, perms=Permission.PERMS_ALL)
 
 @paydb.route('/user_info', methods=['POST'])
 def user_info():
-    sig = request_get_signature()
-    content = request.get_json(force=True)
-    if content is None:
-        return bad_request(web_utils.INVALID_JSON)
-    params, err_response = get_json_params(content, ["api_key", "nonce", "email"])
+    email, api_key, err_response = auth_request_get_single_param(db, "email")
     if err_response:
         return err_response
-    api_key, nonce, email = params
-    res, reason, api_key = check_auth(db.session, api_key, nonce, sig, request.data)
-    if not res:
-        return bad_request(reason)
     if not email:
         email = api_key.user.email
+    else:
+        email = email.lower()
     user = User.from_email(db.session, email)
     if not user:
         time.sleep(5)
@@ -243,19 +254,25 @@ def user_info():
         return jsonify(dict(email=user.email, balance=balance, photo=user.photo, photo_type=user.photo_type, roles=roles, permissions=perms))
     return jsonify(dict(email=user.email, balance=-1, photo=user.photo, photo_type=user.photo_type, roles=[], permissions=[]))
 
-@paydb.route('/user_update_email', methods=['GET', 'POST'])
-def user_update_email():
-    sig = request_get_signature()
-    content = request.get_json(force=True)
-    if content is None:
-        return bad_request(web_utils.INVALID_JSON)
-    params, err_response = get_json_params(content, ["api_key", "nonce", "email"])
+@paydb.route('/user_reset_password', methods=['POST'])
+@limiter.limit("10/hour")
+def user_reset_password():
+    api_key, err_response = auth_request(db)
     if err_response:
         return err_response
-    api_key, nonce, email = params
-    res, reason, api_key = check_auth(db.session, api_key, nonce, sig, request.data)
-    if not res:
-        return bad_request(reason)
+    user = api_key.user
+    send_reset_password_instructions(user)
+    return 'ok'
+
+@paydb.route('/user_update_email', methods=['POST'])
+@limiter.limit("10/hour")
+def user_update_email():
+    email, api_key, err_response = auth_request_get_single_param(db, "email")
+    if err_response:
+        return err_response
+    if not email:
+        return bad_request(web_utils.INVALID_EMAIL)
+    email = email.lower()
     user = User.from_email(db.session, email)
     if user:
         time.sleep(5)
@@ -267,6 +284,7 @@ def user_update_email():
     return 'ok'
 
 @paydb.route('/user_update_email_confirm/<token>', methods=['GET'])
+@limiter.limit("10/hour")
 def user_update_email_confirm(token=None):
     req = UserUpdateEmailRequest.from_token(db.session, token)
     if not req:
@@ -288,7 +306,32 @@ def user_update_email_confirm(token=None):
     flash('User email updated.', 'success')
     return redirect('/')
 
-@paydb.route('/user_update_photo', methods=['GET', 'POST'])
+@paydb.route('/user_update_password', methods=['POST'])
+@limiter.limit("10/hour")
+def user_update_password():
+    sig = request_get_signature()
+    content = request.get_json(force=True)
+    if content is None:
+        return bad_request(web_utils.INVALID_JSON)
+    params, err_response = get_json_params(content, ["api_key", "nonce", "current_password", "new_password"])
+    if err_response:
+        return err_response
+    api_key, nonce, current_password, new_password = params
+    res, reason, api_key = check_auth(db.session, api_key, nonce, sig, request.data)
+    if not res:
+        return bad_request(reason)
+    user = api_key.user
+    verified_password = verify_password(current_password, user.password)
+    if not verified_password:
+        return bad_request(web_utils.INCORRECT_PASSWORD)
+    ### set the new_password:
+    user.password = encrypt_password(new_password)
+    db.session.add(user)
+    db.session.commit()
+    return 'password changed.'
+
+@paydb.route('/user_update_photo', methods=['POST'])
+@limiter.limit("10/hour")
 def user_update_photo():
     sig = request_get_signature()
     content = request.get_json(force=True)
@@ -350,17 +393,9 @@ def transaction_create():
 
 @paydb.route('/transaction_info', methods=['POST'])
 def transaction_info():
-    sig = request_get_signature()
-    content = request.get_json(force=True)
-    if content is None:
-        return bad_request(web_utils.INVALID_JSON)
-    params, err_response = get_json_params(content, ["api_key", "nonce", "token"])
+    token, api_key, err_response = auth_request_get_single_param(db, "token")
     if err_response:
         return err_response
-    api_key, nonce, token = params
-    res, reason, api_key = check_auth(db.session, api_key, nonce, sig, request.data)
-    if not res:
-        return bad_request(reason)
     tx = PayDbTransaction.from_token(db.session, token)
     if not tx:
         return bad_request(web_utils.INVALID_TX)
