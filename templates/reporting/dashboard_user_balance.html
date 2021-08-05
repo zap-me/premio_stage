@@ -1,0 +1,317 @@
+{% extends "layout.html" %}
+
+{% block content %}
+
+<a class="btn btn-primary" href="/"><i class="glyphicon glyphicon-chevron-left"></i> Back</a>
+<a class="btn btn-primary" href="/dashboard"><i class="glyphicon glyphicon-chevron-left"></i>&nbspDashboard</a>
+<a class="btn btn-primary" href="/dashboard_user_balance"><i class="glyphicon glyphicon-chevron-left"></i>&nbspUser Balance</a>
+
+<div class='some-page-wrapper'>
+  <div class='row'>
+    <div class='column'>
+      <div class='title-borderless'>
+      </div>
+    </div>
+    <div class='column'>
+      <div class='title_1line-column'>
+        Today 
+      </div>
+    </div>
+    <div class='column'>
+      <div class='title_1line-column'>
+        Yesterday
+      </div>
+    </div>
+    <div class='column'>
+      <div class='title_2lines-column'>
+        Week<br>
+        (Mon-Sun)
+      </div>
+    </div>
+    <div class='column'>
+      <div class='title_2lines-column'>
+        Month<br>
+        (Current)
+      </div>
+    </div>
+    <div class='column'>
+      <div class='title_2lines-column'>
+        Year<br>
+        (YTD)
+      </div>
+    </div>
+    <div class='column'>
+      <div class='title_1line-column'>
+        Lifetime
+      </div>
+    </div>
+  </div>
+  <div class='row'>
+    <div class='column'>
+      <div class='row-divider'>
+        User
+      </div>
+    </div>
+  </div>
+  <div class='row'>
+    <div class='column'>
+      <div class='row-1line-title-white'>
+        &nbsp&nbsp&nbspSignup&nbsp&nbsp
+      </div>
+    </div>
+    <div class='column'>
+      <div class='white-row'>
+	{{ user_count_today }}
+      </div>
+    </div>
+    <div class='column'>
+      <div class='white-row'>
+	{{ user_count_yesterday }}
+      </div>
+    </div>
+    <div class='column'>
+      <div class='white-row'>
+	{{ user_count_weekly }}
+      </div>
+    </div>
+    <div class='column'>
+      <div class='white-row'>
+        {{ user_count_monthly }}
+      </div>
+    </div>
+    <div class='column'>
+      <div class='white-row'>
+        {{ user_count_yearly }}
+      </div>
+    </div>
+    <div class='column'>
+      <div class='white-row'>
+        {{ user_count_lifetime }}
+      </div>
+    </div>
+  </div>
+  <div class='row'>
+    <div class='column'>
+      <div class='row-divider'>
+        User Count:
+      </div>
+    </div>
+  </div>
+  <div class='row'>
+    <div class='column'>
+      <div class='title-column'>
+        Total number of users:
+      </div>
+    </div>
+    <div class='column'>
+      <div class='title-column'>
+        {{ user_count }} 
+      </div>
+    </div>
+  </div>
+  <div class='row'>
+    <div class='column'>
+      <div class='row-divider'>
+        Users/Balance
+      </div>
+    </div>
+  </div>
+  <div class='row'>
+    <div class='column'>
+      <div class='title-column'>
+        Users
+      </div>
+    </div>
+    <div class='column'>
+      <div class='title-column' >
+        Balance(current)
+      </div>
+    </div>
+  </div>
+  {% for user in users_balances %}
+  <div class='row'>
+    <div class='column'>
+      <div class='title-column'>
+	      {{user.user}}    
+      </div>
+    </div>
+    <div class='column'>
+      <div class='title-column'>
+        {{ user.balance }}
+      </div>
+    </div>
+  </div>
+  {%endfor %}
+</div>
+<!--
+  <div class='row'>
+    <div class='column'>
+      <div class='white-row'>
+        Signup
+      </div>
+    </div>
+    <div class='column'>
+      <div class='white-column'>
+	{{ user_count_today }}
+      </div>
+    </div>
+    <div class='column'>
+      <div class='white-column'>
+	{{ user_count_yesterday }}
+      </div>
+    </div>
+    <div class='column'>
+      <div class='white-column'>
+	{{ user_count_weekly }}
+      </div>
+    </div>
+    <div class='column'>
+      <div class='white-column'>
+        {{ user_count_monthly }}
+      </div>
+    </div>
+    <div class='column'>
+      <div class='white-column'>
+        {{ user_count_yearly }}
+      </div>
+    </div>
+    <div class='column'>
+      <div class='white-column'>
+        {{ user_count_lifetime }}
+      </div>
+    </div>
+  </div>
+  <div class='row'>
+    <div class='column'>
+      <div class='proposals_payments-title'>
+        Proposals/Payments
+      </div>
+    </div>
+  </div>
+  <div class='row'>
+    <div class='column'>
+      <div class='proposal-row'>
+        No. of Proposals
+      </div>
+    </div>
+    <div class='column'>
+      <div class='white-column'>
+        {{ proposal_count_today }}
+      </div>
+    </div>
+    <div class='column'>
+      <div class='white-column'>
+	{{ proposal_count_yesterday }}
+      </div>
+    </div>
+    <div class='column'>
+      <div class='white-column'>
+	{{ proposal_count_weekly }}
+      </div>
+    </div>
+    <div class='column'>
+      <div class='white-column'>
+        {{ proposal_count_monthly }}
+      </div>
+    </div>
+    <div class='column'>
+      <div class='white-column'>
+        {{ proposal_count_yearly }}
+      </div>
+    </div>
+    <div class='column'>
+      <div class='white-column'>
+        {{ proposal_count_lifetime }}
+      </div>
+    </div>
+  </div>
+  <div class='row'>
+    <div class='column'>
+      <div class='green-row'>
+        Claimed
+      </div>
+    </div>
+    <div class='column'>
+      <div class='green-column'>
+	{{ payment_query_today }}
+      </div>
+    </div>
+    <div class='column'>
+      <div class='green-column'>
+	{{ payment_query_yesterday }}
+      </div>
+    </div>
+    <div class='column'>
+      <div class='green-column'>
+	{{ payment_query_weekly }}
+      </div>
+    </div>
+    <div class='column'>
+      <div class='green-column'>
+        {{ payment_query_monthly }}
+      </div>
+    </div>
+    <div class='column'>
+      <div class='green-column'>
+        {{ payment_query_yearly }}
+      </div>
+    </div>
+    <div class='column'>
+      <div class='green-column'>
+        {{ payment_query_lifetime }}
+      </div>
+    </div>
+  </div>
+  <div class='row'>
+    <div class='column'>
+      <div class='red-row'>
+        Unclaimed
+      </div>
+    </div>
+    <div class='column'>
+      <div class='red-column'>
+	{{ unclaimed_payment_query_today }}
+      </div>
+    </div>
+    <div class='column'>
+      <div class='red-column'>
+	{{ unclaimed_payment_query_yesterday }}
+      </div>
+    </div>
+    <div class='column'>
+      <div class='red-column'>
+	{{ unclaimed_payment_query_weekly }}
+      </div>
+    </div>
+    <div class='column'>
+      <div class='red-column'>
+        {{ unclaimed_payment_query_monthly }}
+      </div>
+    </div>
+    <div class='column'>
+      <div class='red-column'>
+        {{ unclaimed_payment_query_yearly }}
+      </div>
+    </div>
+    <div class='column'>
+      <div class='red-column'>
+        {{ unclaimed_payment_query_lifetime }}
+      </div>
+    </div>
+  </div>
+  <div class='row'>
+    <div class='column'>
+      <div class='title-bar'>
+      {{ premio_balance }}
+      </div>
+    </div>
+  </div>
+  <div class='row'>
+    <div class='column'>
+      <div class='title-bar'>
+        Placeholder Row
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

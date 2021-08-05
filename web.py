@@ -25,6 +25,7 @@ from fcm import FCM
 from web_utils import bad_request, get_json_params, get_json_params_optional
 import paydb_core
 from reward_endpoint import reward, reward_create
+from reporting_endpoint import reporting, report_dashboard, report_user_balance, report_premio_txs, report_proposal_txs
 # pylint: disable=unused-import
 import admin
 
@@ -58,6 +59,7 @@ if app.config["USE_STASH"]:
     app.register_blueprint(stash_bp, url_prefix='/stash')
 # reward blueprint
 app.register_blueprint(reward, url_prefix='/reward')
+app.register_blueprint(reporting, url_prefix='/reporting')
 
 def logger_setup(level, handler):
     logger.setLevel(level)
@@ -364,7 +366,102 @@ def dashboard():
     data = dashboard_data_paydb()
     data["premio_stage_balance"] = int2asset(data["premio_stage_balance"])
     data["total_balance"] = int2asset(data["total_balance"])
-    return render_template("dashboard_paydb.html", data=data)
+    return report_dashboard(data["premio_stage_balance"], data["premio_stage_account"], data["total_balance"])
+
+@app.route("/dashboard_report")
+@roles_accepted(Role.ROLE_ADMIN)
+def dashboard_report():
+    if SERVER_MODE == SERVER_MODE_WAVES:
+        data = dashboard_data_waves()
+        data["asset_balance"] = int2asset(data["asset_balance"])
+        data["waves_balance"] = from_int_to_user_friendly(data["waves_balance"], 10**8)
+        data["master_asset_balance"] = int2asset(data["master_asset_balance"])
+        data["master_waves_balance"] = from_int_to_user_friendly(data["master_waves_balance"], 10**8)
+        return render_template("dashboard_waves.html", data=data)
+    data = dashboard_data_paydb()
+    data["premio_stage_balance"] = int2asset(data["premio_stage_balance"])
+    data["total_balance"] = int2asset(data["total_balance"])
+    return report_dashboard(data["premio_stage_balance"], data["premio_stage_account"], data["total_balance"])
+
+### List username with their balances
+@app.route("/dashboard_user_balance")
+@roles_accepted(Role.ROLE_ADMIN)
+def dashboard_user_balance():
+    return report_user_balance()
+
+### Premio Txs Dashboard
+@app.route("/dashboard_premio_tx_today")
+@roles_accepted(Role.ROLE_ADMIN)
+def dashboard_premio_tx_today():
+    today = str('today')
+    return report_premio_txs(today)
+
+@app.route("/dashboard_premio_tx_yesterday")
+@roles_accepted(Role.ROLE_ADMIN)
+def dashboard_premio_tx_yesterday():
+    yesterday = str('yesterday')
+    return report_premio_txs(yesterday)
+
+@app.route("/dashboard_premio_tx_week")
+@roles_accepted(Role.ROLE_ADMIN)
+def dashboard_premio_tx_week():
+    week = str('week')
+    return report_premio_txs(week)
+
+@app.route("/dashboard_premio_tx_month")
+@roles_accepted(Role.ROLE_ADMIN)
+def dashboard_premio_tx_month():
+    month = str('month')
+    return report_premio_txs(month)
+
+@app.route("/dashboard_premio_tx_year")
+@roles_accepted(Role.ROLE_ADMIN)
+def dashboard_premio_tx_year():
+    year = str('year')
+    return report_premio_txs(year)
+
+@app.route("/dashboard_premio_tx_lifetime")
+@roles_accepted(Role.ROLE_ADMIN)
+def dashboard_premio_tx_lifetime():
+    lifetime = str('lifetime')
+    return report_premio_txs(lifetime)
+
+### Proposal Dashboard:
+@app.route("/dashboard_proposal_tx_today")
+@roles_accepted(Role.ROLE_ADMIN)
+def dashboard_proposal_tx_today():
+    today = str('today')
+    return report_proposal_txs(today)
+
+@app.route("/dashboard_proposal_tx_yesterday")
+@roles_accepted(Role.ROLE_ADMIN)
+def dashboard_proposal_tx_yesterday():
+    yesterday = str('yesterday')
+    return report_proposal_txs(yesterday)
+
+@app.route("/dashboard_proposal_tx_week")
+@roles_accepted(Role.ROLE_ADMIN)
+def dashboard_proposal_tx_week():
+    week = str('week')
+    return report_proposal_txs(week)
+
+@app.route("/dashboard_proposal_tx_month")
+@roles_accepted(Role.ROLE_ADMIN)
+def dashboard_proposal_tx_month():
+    month = str('month')
+    return report_proposal_txs(month)
+
+@app.route("/dashboard_proposal_tx_year")
+@roles_accepted(Role.ROLE_ADMIN)
+def dashboard_proposal_tx_year():
+    year = str('year')
+    return report_proposal_txs(year)
+
+@app.route("/dashboard_proposal_tx_lifetime")
+@roles_accepted(Role.ROLE_ADMIN)
+def dashboard_proposal_tx_lifetime():
+    lifetime = str('lifetime')
+    return report_proposal_txs(lifetime)
 
 # https://gis.stackexchange.com/a/2964
 def meters_to_lat_lon_displacement(meters, origin_latitude):

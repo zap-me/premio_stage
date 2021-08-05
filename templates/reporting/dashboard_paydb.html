@@ -1,0 +1,294 @@
+{% extends "layout.html" %}
+{% block head_css %}
+  {{ super() }}
+{% endblock %}
+
+{% block content %}
+<a class="btn btn-primary" href="/"><i class="glyphicon glyphicon-chevron-left"></i> Back</a>
+<a class="btn btn-primary" href="/dashboard"><i class="glyphicon glyphicon-chevron-left"></i>&nbspDashboard</a>
+<a class="btn btn-primary" href="/dashboard_user_balance"><i class="glyphicon glyphicon-chevron-left"></i>&nbspUser Balance</a>
+<div class='some-page-wrapper'>	
+  <div class='row'>
+    <div class='column'>
+      <div class='title-borderless'>
+      </div>
+    </div>
+    <div class='column'>
+      <div class='title_1line-column'>
+        Today 
+      </div>
+    </div>
+    <div class='column'>
+      <div class='title_1line-column'>
+        Yesterday
+      </div>
+    </div>
+    <div class='column'>
+      <div class='title_2lines-column'>
+        Week<br>
+        (Mon-Sun)
+      </div>
+    </div>
+    <div class='column'>
+      <div class='title_2lines-column'>
+        Month<br>
+        (Current)
+      </div>
+    </div>
+    <div class='column'>
+      <div class='title_2lines-column'>
+        Year<br>
+        (YTD)
+      </div>
+    </div>
+    <div class='column'>
+      <div class='title_1line-column'>
+        Lifetime
+      </div>
+    </div>
+  </div>
+  <div class='row'>
+    <div class='column'>
+      <div class='row-divider'>
+        Premio Transactions
+      </div>
+    </div>
+  </div>
+  <div class='row'>
+    <div class='column'>
+      <div class='row-2line-title-white'>
+	Count<br>
+	(Tx count)
+      </div>
+    </div>
+    <div class='column'>
+      <a href="/dashboard_premio_tx_today">
+      <div class='white-row'>
+	{{ premio_tx_count_today }}
+      </div>
+      </a>
+    </div>
+    <div class='column'>
+      <a href="/dashboard_premio_tx_yesterday">
+      <div class='white-row'>
+        {{ premio_tx_count_yesterday }}
+      </div>
+      </a>
+    </div>
+    <div class='column'>
+      <a href="/dashboard_premio_tx_week">
+      <div class='white-row'>
+        {{ premio_tx_count_week }}
+      </div>
+      </a>
+    </div>
+    <div class='column'>
+      <a href="/dashboard_premio_tx_month">
+      <div class='white-row'>
+        {{ premio_tx_count_month }}
+      </div>
+      </a>
+    </div>
+    <div class='column'>
+      <a href="/dashboard_premio_tx_year">
+      <div class='white-row'>
+        {{ premio_tx_count_year }}
+      </div>
+      </a>
+    </div>
+    <div class='column'>
+      <a href="/dashboard_premio_tx_lifetime">
+      <div class='white-row'>
+        {{ premio_tx_count_lifetime }}
+      </div>
+      </a>
+    </div>
+  </div>
+  <div class='row'>
+    <div class='column'>
+      <div class='row-divider'>
+        Proposals/Payments
+      </div>
+    </div>
+  </div>
+  <div class='row'>
+    <div class='column'>
+      <div class='row-2line-title-white'>
+        No. of &nbsp&nbsp&nbspProposals&nbsp&nbsp
+      </div>
+    </div>
+    <div class='column'>
+      <div class='white-row'>
+	      <!--<a href="/dashboard_premio_tx_today">{{ proposal_count_today }}</a>-->
+	      {{ proposal_count_today }}
+      </div>
+    </div>
+    <div class='column'>
+      <div class='white-row'>
+	      <!--<a href="/dashboard_premio_tx_yesterday">{{ proposal_count_yesterday }}</a>-->
+	      {{ proposal_count_yesterday }}
+      </div>
+    </div>
+    <div class='column'>
+      <div class='white-row'>
+	      <!--<a href="/dashboard_premio_tx_week">{{ proposal_count_weekly }}</a>-->
+	      {{ proposal_count_weekly }}
+      </div>
+    </div>
+    <div class='column'>
+      <div class='white-row'>
+	      <!--<a href="/dashboard_premio_tx_month">{{ proposal_count_monthly }}</a>-->
+	      {{ proposal_count_monthly }}
+      </div>
+    </div>
+    <div class='column'>
+      <div class='white-row'>
+	      <!--<a href="/dashboard_premio_tx_year">{{ proposal_count_yearly }}</a>-->
+	      {{ proposal_count_yearly }}
+      </div>
+    </div>
+    <div class='column'>
+      <div class='white-row'>
+	      <!--<a href="/dashboard_premio_tx_lifetime">{{ proposal_count_lifetime }}</a>-->
+	      {{ proposal_count_lifetime }}
+      </div>
+    </div>
+  </div>
+  <div class='row'>
+    <div class='column'>
+      <div class='row-1line-title-green'>
+        &nbsp&nbspClaimed&nbsp&nbsp
+      </div>
+    </div>
+    <div class='column'>
+      <div class='green-row'>
+	{{ payment_query_today }}
+      </div>
+    </div>
+    <div class='column'>
+      <div class='green-row'>
+	{{ payment_query_yesterday }}
+      </div>
+    </div>
+    <div class='column'>
+      <div class='green-row'>
+	{{ payment_query_weekly }}
+      </div>
+    </div>
+    <div class='column'>
+      <div class='green-row'>
+        {{ payment_query_monthly }}
+      </div>
+    </div>
+    <div class='column'>
+      <div class='green-row'>
+        {{ payment_query_yearly }}
+      </div>
+    </div>
+    <div class='column'>
+      <div class='green-row'>
+        {{ payment_query_lifetime }}
+      </div>
+    </div>
+  </div>
+  <div class='row'>
+    <div class='column'>
+      <div class='row-1line-title-red'>
+        Unclaimed
+      </div>
+    </div>
+    <div class='column'>
+      <div class='red-row'>
+	{{ unclaimed_payment_query_today }}
+      </div>
+    </div>
+    <div class='column'>
+      <div class='red-row'>
+	{{ unclaimed_payment_query_yesterday }}
+      </div>
+    </div>
+    <div class='column'>
+      <div class='red-row'>
+	{{ unclaimed_payment_query_weekly }}
+      </div>
+    </div>
+    <div class='column'>
+      <div class='red-row'>
+        {{ unclaimed_payment_query_monthly }}
+      </div>
+    </div>
+    <div class='column'>
+      <div class='red-row'>
+        {{ unclaimed_payment_query_yearly }}
+      </div>
+    </div>
+    <div class='column'>
+      <div class='red-row'>
+        {{ unclaimed_payment_query_lifetime }}
+      </div>
+    </div>
+  </div>
+  <div class='row'>
+    <div class='column'>
+      <div class='row-1line-title-orange'>
+        &nbsp&nbsp&nbsp&nbsp&nbspTotal&nbsp&nbsp&nbsp&nbsp&nbsp
+      </div>
+    </div>
+    <div class='column'>
+      <div class='orange-row'>
+	{{ total_payment_query_today }}
+      </div>
+    </div>
+    <div class='column'>
+      <div class='orange-row'>
+	{{ total_payment_query_yesterday }}
+      </div>
+    </div>
+    <div class='column'>
+      <div class='orange-row'>
+	{{ total_payment_query_weekly }}
+      </div>
+    </div>
+    <div class='column'>
+      <div class='orange-row'>
+        {{ total_payment_query_monthly }}
+      </div>
+    </div>
+    <div class='column'>
+      <div class='orange-row'>
+        {{ total_payment_query_yearly }}
+      </div>
+    </div>
+    <div class='column'>
+      <div class='orange-row'>
+        {{ total_payment_query_lifetime }}
+      </div>
+    </div>
+  </div>
+  <div class='row'>
+    <div class='column'>
+      <div class='operations_account_column'>
+	      <b> Operations Account: {{ premio_stage_account }}</b>
+        <div class='blue-row'>
+          {{ premio_balance }} {{ config["ASSET_NAME"] }}
+        </div>
+      </div>
+    </div>
+    <!--
+    <div class='column'>
+      <div class='proposals_payments-title'>
+	      {{ premio_balance }}
+      </div>
+    </div>
+    -->
+    <div class='column'>
+      <div class='operations_account_column'>
+	<b>Total Balance: </b>
+        <div class='blue-row'>
+	  {{ total_balance }} {{ config["ASSET_NAME"] }}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
