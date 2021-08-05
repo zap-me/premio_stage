@@ -7,16 +7,18 @@
 
 import time
 import datetime
+from datetime import date, timedelta
+from dateutil.relativedelta import *
 import decimal
 import csv
 import logging
 import json
 import secrets
 
-from flask import redirect, url_for, request, flash, has_app_context, g, abort
+from flask import redirect, url_for, request, flash, has_app_context, g, abort, render_template
 from flask_security import Security, SQLAlchemyUserDatastore, \
     UserMixin, RoleMixin, current_user
-from flask_admin import expose
+from flask_admin import expose, BaseView
 from flask_admin.babel import lazy_gettext
 from flask_admin.helpers import get_form_data
 from flask_admin.contrib import sqla
@@ -26,7 +28,7 @@ from wtforms.fields import TextField, DecimalField, FileField
 from wtforms import validators
 from marshmallow import Schema, fields
 from markupsafe import Markup
-from sqlalchemy import or_, and_
+from sqlalchemy import or_, and_, func
 from sqlalchemy.exc import SQLAlchemyError, DBAPIError
 
 from app_core import app, db
@@ -727,8 +729,8 @@ class ProposalModelView(BaseModelView):
         for payment in model.payments:
             if payment.status == payment.STATE_SENT_FUNDS:
                 total_claimed += payment.amount
-        total_claimed = decimal.Decimal(total_claimed) / 100
-        return total_claimed
+        total_claimed = decimal.Decimal(total_claimed) 
+        return int2asset(total_claimed)
 
     def _format_claimed_column(view, context, model, name):
         total_claimed = view._format_claimed(model)
@@ -745,7 +747,7 @@ class ProposalModelView(BaseModelView):
         total = 0
         for payment in model.payments:
             total += payment.amount
-        total = total / 100
+        total = int2asset(total)
         return Markup(total)
 
     def _format_totalclaimed_column_export(view, context, model, name):
@@ -840,7 +842,11 @@ class ProposalModelView(BaseModelView):
             return redirect(return_url)
         # process the proposal
         proposal.authorize(current_user)
-        # commit to db
+        #total_balance = 6
+        #if total_balance < model.amount:
+        #    flash('Balance is too low', 'error')
+        #    return redirect(return_url)
+        ## commit to db
         try:
             self.session.commit()
             flash('Proposal {proposal_id} set as authorized'.format(proposal_id=proposal_id))
@@ -1324,3 +1330,4 @@ class Referral(db.Model):
     @classmethod
     def from_user(cls, session, user):
         return session.query(cls).filter(cls.user_id == user.id).all()
+

@@ -1,0 +1,76 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<a class="btn btn-primary" href="/"><i class="glyphicon glyphicon-chevron-left"></i> Back</a>
+<a class="btn btn-primary" href="/dashboard"><i class="glyphicon glyphicon-chevron-left"></i>&nbspDashboard</a>
+<a class="btn btn-primary" href="/dashboard_report2"><i class="glyphicon glyphicon-chevron-left"></i>&nbspUser Balance</a>
+
+<div class='some-page-wrapper'>
+  <div class='row'>
+    <div class='column'>
+      <div class='title-column'>
+	      sender
+      </div>
+    </div>
+    <div class='column'>
+      <div class='title-column'>
+	     recipient 
+      </div>
+    </div>
+    <div class='column'>
+      <div class='title-column'>
+	      date
+      </div>
+    </div>
+    <div class='column'>
+      <div class='title-column'>
+	      token
+      </div>
+    </div>
+    <div class='column'>
+      <div class='title-column'>
+	      action
+      </div>
+    </div>
+    <div class='column'>
+      <div class='title-column'>
+	      amount
+      </div>
+    </div>
+  </div>
+  {% for result in result_dict %}
+  <div class='row'>
+    <div class='column'>
+      <div class='title-column'>
+	      {{result.sender}}
+      </div>
+    </div>
+    <div class='column'>
+      <div class='title-column'>
+	      {{result.recipient}}
+      </div>
+    </div>
+    <div class='column'>
+      <div class='title-column'>
+	      {{result.date}}
+      </div>
+    </div>
+    <div class='column'>
+      <div class='title-column'>
+	      {{result.token}}
+      </div>
+    </div>
+    <div class='column'>
+      <div class='title-column'>
+	     {{result.action}}
+      </div>
+    </div>
+    <div class='column'>
+      <div class='title-column'>
+	      {{result.amount}}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
