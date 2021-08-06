@@ -852,11 +852,7 @@ class ProposalModelView(BaseModelView):
             return redirect(return_url)
         # process the proposal
         proposal.authorize(current_user)
-        #total_balance = 6
-        #if total_balance < model.amount:
-        #    flash('Balance is too low', 'error')
-        #    return redirect(return_url)
-        ## commit to db
+        # commit to db
         try:
             self.session.commit()
             flash('Proposal {proposal_id} set as authorized'.format(proposal_id=proposal_id))
