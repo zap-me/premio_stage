@@ -36,18 +36,15 @@ first_day_current_year = first_day_current_month + relativedelta(month=1)
 first_day_next_year = first_day_current_year + relativedelta(years=+1)
 last_day_current_year = first_day_next_year - timedelta(days=1)
 
-#@reporting.route('/report1')
 def report_dashboard(premio_balance, premio_stage_account, total_balance):
     ### Proposal queries
-    #
     proposal_count = Proposal.query.count()
-    proposal_count_today = proposal_counting(Proposal, today, tomorrow)
-    proposal_count_yesterday = proposal_counting(Proposal, yesterday, today)
-    proposal_count_weekly = proposal_counting(Proposal,monday, next_monday)
-    proposal_count_monthly = proposal_counting(Proposal, first_day_current_month, first_day_next_month)
-    proposal_count_yearly = proposal_counting(Proposal, first_day_current_year, first_day_next_year)
+    proposal_count_today = transaction_count(Proposal, today, tomorrow)
+    proposal_count_yesterday = transaction_count(Proposal, yesterday, today)
+    proposal_count_weekly = transaction_count(Proposal,monday, next_monday)
+    proposal_count_monthly = transaction_count(Proposal, first_day_current_month, first_day_next_month)
+    proposal_count_yearly = transaction_count(Proposal, first_day_current_year, first_day_next_year)
     ### proposal/payment queries
-    #
     payment_query_today = claimed_proposal_payment(Proposal, Payment, today, tomorrow)
     unclaimed_payment_query_today = unclaimed_proposal_payment(Proposal, Payment, today, tomorrow)
     total_payment_query_today = total_proposal_payment(Proposal, Payment, today, tomorrow)
@@ -66,14 +63,19 @@ def report_dashboard(premio_balance, premio_stage_account, total_balance):
     payment_query_lifetime = claimed_lifetime(Proposal, Payment)
     unclaimed_payment_query_lifetime = unclaimed_lifetime(Proposal, Payment)
     total_payment_query_lifetime = total_lifetime(Proposal, Payment)
-    ### Premio (PayDbTransaction)
+    #### Premio (PayDbTransaction)
+    #premio_tx_count_lifetime = PayDbTransaction.query.count()
+    #premio_tx_count_today = premio_transaction_count(today, tomorrow)
+    #premio_tx_count_yesterday = premio_transaction_count(yesterday, today)
+    #premio_tx_count_week = premio_transaction_count(monday, next_monday)
+    #premio_tx_count_month = premio_transaction_count(first_day_current_month, first_day_next_month)
+    #premio_tx_count_year = premio_transaction_count(first_day_current_year, first_day_next_year)
     premio_tx_count_lifetime = PayDbTransaction.query.count()
-    premio_tx_count_today = premio_transaction_count(today, tomorrow)
-    premio_tx_count_yesterday = premio_transaction_count(yesterday, today)
-    premio_tx_count_week = premio_transaction_count(monday, next_monday)
-    premio_tx_count_month = premio_transaction_count(first_day_current_month, first_day_next_month)
-    premio_tx_count_year = premio_transaction_count(first_day_current_year, first_day_next_year)
-    #print(premio_tx_count_lifetime)
+    premio_tx_count_today = transaction_count(PayDbTransaction, today, tomorrow)
+    premio_tx_count_yesterday = transaction_count(PayDbTransaction, yesterday, today)
+    premio_tx_count_week = transaction_count(PayDbTransaction, monday, next_monday)
+    premio_tx_count_month = transaction_count(PayDbTransaction, first_day_current_month, first_day_next_month)
+    premio_tx_count_year = transaction_count(PayDbTransaction, first_day_current_year, first_day_next_year)
     ### render template with the value
     return render_template('reporting/dashboard_paydb.html', premio_balance=premio_balance, premio_stage_account=premio_stage_account, total_balance=total_balance, \
         proposal_count_lifetime=proposal_count, proposal_count_today=proposal_count_today, proposal_count_yesterday=proposal_count_yesterday, \
@@ -91,11 +93,9 @@ def report_dashboard(premio_balance, premio_stage_account, total_balance):
         premio_tx_count_today=premio_tx_count_today, premio_tx_count_yesterday=premio_tx_count_yesterday, \
         premio_tx_count_week=premio_tx_count_week, premio_tx_count_month=premio_tx_count_month, premio_tx_count_year=premio_tx_count_year)
 
-#@reporting.route('/report2')
 def report_user_balance():
-    users = User.query.all()
     ### User queries
-    #
+    users = User.query.all()
     user_count = User.query.count()
     user_result = User.query.order_by(User.confirmed_at).all()
     user_count_today = user_counting(User, today, tomorrow)
@@ -114,7 +114,6 @@ def report_user_balance():
             sorted_users_balances = sorted(users_balances, key=lambda k:float(k['balance']), reverse=True)
     return render_template("reporting/dashboard_user_balance.html", user_count=user_count, users_balances=sorted_users_balances, user_count_today=user_count_today, user_count_yesterday=user_count_yesterday, user_count_weekly=user_count_weekly, user_count_monthly=user_count_monthly, user_count_yearly=user_count_yearly, user_count_lifetime=user_count)
 
-#@reporting.route('/report3')
 def report_premio_txs(frequency):
     if frequency == 'lifetime':
         return redirect('/admin/paydbtransaction/')
@@ -194,32 +193,15 @@ def total_lifetime(table1, table2):
     result = utils.int2asset(result)
     return result
 
-def proposal_counting(table, start_date, end_date):
-    result = table.query.filter(and_(table.date >= str(start_date), table.date < str(end_date))).count()
-    if not result:
-        result = 0
-    return result
-
 def user_counting(table, start_date, end_date):
     result = table.query.filter(and_(table.confirmed_at >= str(start_date), table.confirmed_at <= str(end_date))).count()
     if not result:
         result = 0
     return result
 
-def tx_paydbtransaction(start_date, end_date):
-    result = PayDbTransaction.query.join(User, PayDbTransaction.sender_token == User.token)\
-            .filter(and_(PayDbTransaction.date >= str(start_date),\
-            PayDbTransaction.date < str(end_date))).all()
-    return result
-
-def premio_transaction_count(start_date, end_date):
-    result = PayDbTransaction.query.filter(PayDbTransaction.date >= str(start_date),\
-            PayDbTransaction.date < str(end_date)).count()
-    return result
-
-def tx_proposals(start_date, end_date):
-    result = Proposal.query.join(Payment, Payment.proposal_id == Proposal.id)\
-            .filter(and_(Proposal.date_authorized >= str(start_date),\
-            Proposal.date_authorized < str(end_date))).all()
+def transaction_count(table, start_date, end_date):
+    result = table.query.filter(and_(table.date >= str(start_date), table.date < str(end_date))).count()
+    if not result:
+        result = 0
     return result
 
