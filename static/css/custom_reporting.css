@@ -65,6 +65,18 @@
   padding: 30px;
   font-size: 150%;
 }
+.white-nohover-row {
+  background-color: white;
+  border-width: 1px;
+  border-style: solid;
+  border-color: #add3e6;
+  border-radius: 10px;
+  height: 100px;
+  margin: 5px;
+  text-align: center;
+  padding: 30px;
+  font-size: 150%;
+}
 .white-row:hover {
   background-color:#e6ebff;
   border-width: 1px;
