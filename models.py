@@ -7,18 +7,16 @@
 
 import time
 import datetime
-from datetime import date, timedelta
-from dateutil.relativedelta import *
 import decimal
 import csv
 import logging
 import json
 import secrets
 
-from flask import redirect, url_for, request, flash, has_app_context, g, abort, render_template
+from flask import redirect, url_for, request, flash, has_app_context, g, abort
 from flask_security import Security, SQLAlchemyUserDatastore, \
     UserMixin, RoleMixin, current_user
-from flask_admin import expose, BaseView
+from flask_admin import expose
 from flask_admin.babel import lazy_gettext
 from flask_admin.helpers import get_form_data
 from flask_admin.contrib import sqla
@@ -28,7 +26,7 @@ from wtforms.fields import TextField, DecimalField, FileField
 from wtforms import validators
 from marshmallow import Schema, fields
 from markupsafe import Markup
-from sqlalchemy import or_, and_, func
+from sqlalchemy import or_, and_
 from sqlalchemy.exc import SQLAlchemyError, DBAPIError
 
 from app_core import app, db
