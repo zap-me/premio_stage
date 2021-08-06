@@ -38,30 +38,6 @@ last_day_current_year = first_day_next_year - timedelta(days=1)
 
 #@reporting.route('/report1')
 def report_dashboard(premio_balance, premio_stage_account, total_balance):
-    #### Dates
-    ##
-    #today = date.today()
-    #yesterday = today - timedelta(days=1)
-    #tomorrow = today + timedelta(days=1)
-    #weekday = today.weekday()
-    #monday = today - timedelta(days=weekday)
-    #sunday = today + timedelta(days=(6 - weekday))
-    #next_monday = today + datetime.timedelta(days=-today.weekday(), weeks=1)
-    #first_day_current_month = today.replace(day=1)
-    #first_day_next_month = first_day_current_month + relativedelta(months=+1)
-    #last_day_current_month = first_day_next_month - timedelta(days=1)
-    #first_day_current_year = first_day_current_month + relativedelta(month=1)
-    #first_day_next_year = first_day_current_year + relativedelta(years=+1)
-    #last_day_current_year = first_day_next_year - timedelta(days=1)
-    #### User queries
-    ##
-    #user_count = User.query.count()
-    #user_result = User.query.order_by(User.confirmed_at).all()
-    #user_count_today = user_counting(User, today, tomorrow)
-    #user_count_yesterday = user_counting(User, yesterday, today)
-    #user_count_weekly = user_counting(User, monday, next_monday)
-    #user_count_monthly = user_counting(User, first_day_current_month, first_day_next_month)
-    #user_count_yearly = user_counting(User, first_day_current_year, first_day_next_year)
     ### Proposal queries
     #
     proposal_count = Proposal.query.count()
@@ -100,8 +76,6 @@ def report_dashboard(premio_balance, premio_stage_account, total_balance):
     #print(premio_tx_count_lifetime)
     ### render template with the value
     return render_template('reporting/dashboard_paydb.html', premio_balance=premio_balance, premio_stage_account=premio_stage_account, total_balance=total_balance, \
-#        user_result=user_result, user_count_today=user_count_today, user_count_yesterday=user_count_yesterday, \
-#        user_count_weekly=user_count_weekly, user_count_monthly=user_count_monthly, user_count_yearly=user_count_yearly, user_count_lifetime=user_count, \
         proposal_count_lifetime=proposal_count, proposal_count_today=proposal_count_today, proposal_count_yesterday=proposal_count_yesterday, \
         proposal_count_weekly=proposal_count_weekly, proposal_count_monthly=proposal_count_monthly, proposal_count_yearly=proposal_count_yearly, \
         payment_query_today=payment_query_today, unclaimed_payment_query_today=unclaimed_payment_query_today, total_payment_query_today=total_payment_query_today, \
@@ -142,93 +116,33 @@ def report_user_balance():
 
 #@reporting.route('/report3')
 def report_premio_txs(frequency):
-    #today = date.today()
-    #yesterday = today - timedelta(days=1)
-    #tomorrow = today + timedelta(days=1)
-    #weekday = today.weekday()
-    #monday = today - timedelta(days=weekday)
-    #sunday = today + timedelta(days=(6 - weekday))
-    #next_monday = today + datetime.timedelta(days=-today.weekday(), weeks=1)
-    #first_day_current_month = today.replace(day=1)
-    #first_day_next_month = first_day_current_month + relativedelta(months=+1)
-    #last_day_current_month = first_day_next_month - timedelta(days=1)
-    #first_day_current_year = first_day_current_month + relativedelta(month=1)
-    #first_day_next_year = first_day_current_year + relativedelta(years=+1)
-    #last_day_current_year = first_day_next_year - timedelta(days=1)
     if frequency == 'lifetime':
-        results = PayDbTransaction.query.join(User, \
-                PayDbTransaction.sender_token == User.token).all()
+        return redirect('/admin/paydbtransaction/')
     elif frequency == 'today':
-        results = tx_paydbtransaction(today, tomorrow)
+        return redirect('/admin/paydbtransaction/?flt1_0='+str(today)+'+to+'+str(tomorrow))
     elif frequency == 'yesterday':
-        results = tx_paydbtransaction(yesterday, today)
+        return redirect('/admin/paydbtransaction/?flt1_0='+str(yesterday)+'+to+'+str(today))
     elif frequency == 'week':
-        results = tx_paydbtransaction(monday, next_monday)
+        return redirect('/admin/paydbtransaction/?flt1_0='+str(monday)+'+to+'+str(next_monday))
     elif frequency == 'month':
-        results = tx_paydbtransaction(first_day_current_month, first_day_next_month)
+        return redirect('/admin/paydbtransaction/?flt1_0='+str(first_day_current_month)+'+to+'+str(first_day_next_month))
     elif frequency == 'year':
-        results = tx_paydbtransaction(first_day_current_year, first_day_next_year)
-    if results:
-        result_dict = []
-        for result in results:
-            result_dict.append(result.to_json())
-        for result in result_dict:
-            result['sender'] = result['sender'].split("@", 1)[0]
-            result['recipient'] = result['recipient'].split("@", 1)[0]
-            result['date'] = result['date'].split(" ", 1)[0]
-            result['amount'] = utils.int2asset(result['amount'])
-        #print(results)
-        return render_template("reporting/dashboard_premio_transactions.html", result_dict=result_dict)
-    return render_template("reporting/dashboard_premio_transactions.html")
-    #if frequency == 'lifetime':
-    #    results = Proposal.query.join(Payment, Payment.proposal_id == Proposal.id).all()
-    #elif frequency == 'today':
-    #    results = tx_proposals(today, tomorrow)
-    #elif frequency == 'yesterday':
-    #    results = tx_proposals(yesterday, today)
-    #elif frequency == 'week':
-    #    results = tx_proposals(monday, next_monday)
-    #elif frequency == 'month':
-    #    results = tx_proposals(first_day_current_month, first_day_next_month)
-    #elif frequency == 'year':
-    #    results = tx_proposals(first_day_current_year, first_day_next_year)
-   # 
-    #if results:
-    #    result_dict = []
-    #    for result in results:
-    #        result['proposed_by'] = User.query.filter(User.id==result.proposer_id)
-    #        result_dict.append(result)
-    #    print(result_dict)
-    #    #print(results)
-    #    #return render_template("dashboad_proposal_txs.html", result_dict=result_dict)
-    ##return render_template("dashboad_proposal_txs.html")
+        return redirect('/admin/paydbtransaction/?flt1_0='+str(first_day_current_year)+'+to+'+str(first_day_next_year))
 
 def report_proposal_txs(frequency):
     if frequency == 'lifetime':
-        results = Proposal.query.join(Payment, Payment.proposal_id == Proposal.id)\
-                .filter(and_(Proposal.date_authorized >= str(start_date),\
-                Proposal.date_authorized < str(end_date))).all()
+        return redirect('/admin/proposal')
     elif frequency == 'today':
-        results = tx_proposals(today, tomorrow)
+        return redirect('/admin/proposal?flt0_0='+str(today)+'+to+'+str(tomorrow))
     elif frequency == 'yesterday':
-        results = tx_proposals(yesterday, today)
+        return redirect('/admin/proposal?flt0_0='+str(yesterday)+'+to+'+str(today))
     elif frequency == 'week':
-        results = tx_proposals(monday, next_monday)
+        return redirect('/admin/proposal?flt0_0='+str(monday)+'+to+'+str(next_monday))
     elif frequency == 'month':
-        results = tx_proposals(first_day_current_month, first_day_next_month)
+        return redirect('/admin/proposal?flt0_0='+str(first_day_current_month)+'+to+'+str(first_day_next_month))
     elif frequency == 'year':
-        results = tx_proposals(first_day_current_year, first_day_next_year)
-    result_dict = []
-    #print(result_dict)
-    for result in results:
-        #rec_date = result.date
-        #rec_proposer_id = result.proposer_id
-        #rec_
-
-
-        return render_template("proposal_transaction.html", results=results)
-    return 'ok'
-
+        return redirect('/admin/proposal?flt0_0='+str(first_day_current_year)+'+to+'+str(first_day_next_year))
+        
 def claimed_proposal_payment(table1, table2, start_date, end_date):
     result = table1.query.join(table2, table1.id==table2.proposal_id)\
             .filter(and_(table1.date_authorized >= str(start_date),\
@@ -281,7 +195,7 @@ def total_lifetime(table1, table2):
     return result
 
 def proposal_counting(table, start_date, end_date):
-    result = table.query.filter(and_(table.date_authorized >= str(start_date), table.date_authorized < str(end_date))).count()
+    result = table.query.filter(and_(table.date >= str(start_date), table.date < str(end_date))).count()
     if not result:
         result = 0
     return result
