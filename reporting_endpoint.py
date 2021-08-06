@@ -44,7 +44,8 @@ def report_dashboard(premio_balance, premio_stage_account, total_balance):
     proposal_count_weekly = transaction_count(Proposal,monday, next_monday)
     proposal_count_monthly = transaction_count(Proposal, first_day_current_month, first_day_next_month)
     proposal_count_yearly = transaction_count(Proposal, first_day_current_year, first_day_next_year)
-    ### proposal/payment queries
+    
+    ### Payment queries
     payment_query_today = claimed_proposal_payment(Proposal, Payment, today, tomorrow)
     unclaimed_payment_query_today = unclaimed_proposal_payment(Proposal, Payment, today, tomorrow)
     total_payment_query_today = total_proposal_payment(Proposal, Payment, today, tomorrow)
@@ -63,19 +64,15 @@ def report_dashboard(premio_balance, premio_stage_account, total_balance):
     payment_query_lifetime = claimed_lifetime(Proposal, Payment)
     unclaimed_payment_query_lifetime = unclaimed_lifetime(Proposal, Payment)
     total_payment_query_lifetime = total_lifetime(Proposal, Payment)
-    #### Premio (PayDbTransaction)
-    #premio_tx_count_lifetime = PayDbTransaction.query.count()
-    #premio_tx_count_today = premio_transaction_count(today, tomorrow)
-    #premio_tx_count_yesterday = premio_transaction_count(yesterday, today)
-    #premio_tx_count_week = premio_transaction_count(monday, next_monday)
-    #premio_tx_count_month = premio_transaction_count(first_day_current_month, first_day_next_month)
-    #premio_tx_count_year = premio_transaction_count(first_day_current_year, first_day_next_year)
+    
+    ### Premio (PayDbTransaction)
     premio_tx_count_lifetime = PayDbTransaction.query.count()
     premio_tx_count_today = transaction_count(PayDbTransaction, today, tomorrow)
     premio_tx_count_yesterday = transaction_count(PayDbTransaction, yesterday, today)
     premio_tx_count_week = transaction_count(PayDbTransaction, monday, next_monday)
     premio_tx_count_month = transaction_count(PayDbTransaction, first_day_current_month, first_day_next_month)
     premio_tx_count_year = transaction_count(PayDbTransaction, first_day_current_year, first_day_next_year)
+
     ### render template with the value
     return render_template('reporting/dashboard_paydb.html', premio_balance=premio_balance, premio_stage_account=premio_stage_account, total_balance=total_balance, \
         proposal_count_lifetime=proposal_count, proposal_count_today=proposal_count_today, proposal_count_yesterday=proposal_count_yesterday, \
