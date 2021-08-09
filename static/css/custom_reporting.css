@@ -249,6 +249,33 @@
   margin: 5px;
   text-align: center;
 }
+.title_download-user_balance {
+  background-color: white;
+  border-width: 1px;
+  border-style: solid;
+  border-color: #add3e6;
+  border-radius: 10px;
+  height: 30px;
+  margin: 5px;
+  text-align: center;
+}
+.title_download-user_balance:hover {
+  background-color: #e6ebff;
+  border-width: 1px;
+  border-style: solid;
+  border-color: #add3e6;
+  border-radius: 10px;
+  height: 30px;
+  margin: 5px;
+  text-align: center;
+}
+.title_1line-column-borderless {
+  background-color: white;
+  padding: 14px;
+  height: 30px;
+  margin: 5px;
+  text-align: center;
+}
 .title_2lines-column {
   background-color: white;
   border-width: 1px;
@@ -269,6 +296,28 @@
   height: 100px;
   margin: 5px;
   text-align: center;
+}
+.operations_account_column_waves {
+  background-color: white;
+  border-width: 1px;
+  border-style: solid;
+  border-color: #add3e6;
+  border-radius: 10px;
+  height: 400px;
+  margin: 5px;
+  text-align: center;
+}
+.blue-row-waves {
+  background-color: #ebfbfb;
+  border-width: 1px;
+  border-style: solid;
+  border-color: #add3e6;
+  border-radius: 10px;
+  height: 90px;
+  margin: 5px;
+  text-align: center;
+  padding: 10px;
+  font-size: 150%;
 }
 /* USER BALANCE*/
 .title-column {

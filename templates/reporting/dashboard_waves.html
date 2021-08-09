@@ -1,56 +1,54 @@
 {% extends "layout.html" %}
 
 {% block content %}
+<a class="btn btn-primary" href="/"><i class="glyphicon glyphicon-chevron-left"></i> Back</a>
+<a class="btn btn-primary" href="dashboard"><i class="glyphicon glyphicon-chevron-left"></i>&nbspDashboard</a>
+<a class="btn btn-primary" href="dashboard_report_proposals"><i class="glyphicon glyphicon-chevron-left"></i>&nbspProposals</a>
+<a class="btn btn-primary" href="dashboard_user_balance"><i class="glyphicon glyphicon-chevron-left"></i>&nbspUser Balance</a>
+
 {% if current_user.is_authenticated %}
-    <div class="row justify-content-center">
-    <div class="col-sm-6">
-
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">Operations Wallet</h5>
-                <p class="card-text">
-                <center>
-                    {{ data["asset_balance"] }} {{ config["ASSET_NAME"] }}
-                    <br/>
-                    {{ data["waves_balance"] }} WAVES
-                    <br/>
-                    <a href="{{ data["wavesexplorer"] }}/address/{{ data["asset_address"]}}">{{ data["premio_qrcode"] | safe }}</a>
-                    <br/>
-                    <a href="{{ data["wavesexplorer"] }}/address/{{ data["asset_address"]}}">{{ data["asset_address"] }}</a>
-                    <br/>
-                </center>
-                </p>
-            </div>
-        </div>
-
+<div class='some-page-wrapper'>
+  <div class='row'>
+    <div class='column'>
+      <div class='operations_account_column_waves'>
+        <b> Operations Wallet: {{ premio_stage_account }}</b>
+        <div class='blue-row-waves'>
+          {{ data["asset_balance"] }} {{ config["ASSET_NAME"] }}
+	  <br/>
+          {{ data["waves_balance"] }} WAVES
+	  <br/>
+	</div>
+	<br/>
+	<br/>
+        <a href="{{ data["wavesexplorer"] }}/address/{{ data["asset_address"]}}">{{ data["premio_qrcode"] | safe }}</a>
         <br/>
-
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">Master Wallet</h5>
-                <p class="card-text">
-                <center>
-                    {{ data["master_asset_balance"] }} {{ config["ASSET_NAME"] }}
-                    <br/>
-                    {{ data["master_waves_balance"] }} WAVES 
-                    <br/>
-                    <a href="{{ data["wavesexplorer"] }}/address/{{ data["master_waves_address"]}}">{{ data["issuer_qrcode"] | safe }}</a>
-                    <br/>
-                    <a href="{{ data["wavesexplorer"] }}/address/{{ data["master_waves_address"]}}">{{ data["master_waves_address"]}}</a>
-                    <br/>
-                </center>
-                </p>
-            </div>
-        </div>
-
         <br/>
-
+        <a href="{{ data["wavesexplorer"] }}/address/{{ data["asset_address"]}}">{{ data["asset_address"] }}</a>
+        <br/>
+      </div>
+    </div>
+    <div class='column'>
+      <div class='operations_account_column_waves'>
+        <b>Master Wallet: </b>
+        <div class='blue-row-waves'>
+          {{ data["master_asset_balance"] }} {{ config["ASSET_NAME"] }}
+          <br/>
+          {{ data["master_waves_balance"] }} WAVES 
+          <br/>
+        </div>
+        <br/>
+        <br/>
+        <a href="{{ data["wavesexplorer"] }}/address/{{ data["master_waves_address"]}}">{{ data["issuer_qrcode"] | safe }}</a>
+        <br/>
+        <br/>
+        <a href="{{ data["wavesexplorer"] }}/address/{{ data["master_waves_address"]}}">{{ data["master_waves_address"]}}</a>
+        <br/>
+      </div>
+    </div>
+  </div>
+</div>
         {% if config["USE_REFERRALS"] %}
             {% include 'referral_settings.html' %}
         {% endif %}
-
-    </div>
-    </div>
-
 {% endif %}
 {% endblock %}

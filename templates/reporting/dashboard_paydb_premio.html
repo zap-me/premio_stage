@@ -1,13 +1,14 @@
 {% extends "layout.html" %}
+{% block head_css %}
+  {{ super() }}
+{% endblock %}
 
 {% block content %}
-
 <a class="btn btn-primary" href="/"><i class="glyphicon glyphicon-chevron-left"></i> Back</a>
 <a class="btn btn-primary" href="dashboard"><i class="glyphicon glyphicon-chevron-left"></i>&nbspDashboard</a>
 <a class="btn btn-primary" href="dashboard_report_proposals"><i class="glyphicon glyphicon-chevron-left"></i>&nbspProposals</a>
 <a class="btn btn-primary" href="dashboard_user_balance"><i class="glyphicon glyphicon-chevron-left"></i>&nbspUser Balance</a>
-
-<div class='some-page-wrapper'>
+<div class='some-page-wrapper'>	
   <div class='row'>
     <div class='column'>
       <div class='title-borderless'>
@@ -50,102 +51,85 @@
   <div class='row'>
     <div class='column'>
       <div class='row-divider'>
-        User
+        Premio Transactions
       </div>
     </div>
   </div>
   <div class='row'>
     <div class='column'>
-      <div class='row-1line-title-white'>
-        Register
+      <div class='row-2line-title-white-transactioncount'>
+	Transaction
+	Count
+      </div>
+      <div class='hide'>
+	Includes all transactions. ie. Rebates, Vouchers, P2P transactions
       </div>
     </div>
     <div class='column'>
-      <div class='white-nohover-row'>
-	{{ user_count_today }}
+      <a href="dashboard_premio_tx_today">
+      <div class='white-row'>
+	{{ premio_tx_count_today }}
       </div>
+      </a>
     </div>
     <div class='column'>
-      <div class='white-nohover-row'>
-	{{ user_count_yesterday }}
+      <a href="dashboard_premio_tx_yesterday">
+      <div class='white-row'>
+        {{ premio_tx_count_yesterday }}
       </div>
+      </a>
     </div>
     <div class='column'>
-      <div class='white-nohover-row'>
-	{{ user_count_weekly }}
+      <a href="dashboard_premio_tx_week">
+      <div class='white-row'>
+        {{ premio_tx_count_week }}
       </div>
+      </a>
     </div>
     <div class='column'>
-      <div class='white-nohover-row'>
-        {{ user_count_monthly }}
+      <a href="dashboard_premio_tx_month">
+      <div class='white-row'>
+        {{ premio_tx_count_month }}
       </div>
+      </a>
     </div>
     <div class='column'>
-      <div class='white-nohover-row'>
-        {{ user_count_yearly }}
+      <a href="dashboard_premio_tx_year">
+      <div class='white-row'>
+        {{ premio_tx_count_year }}
       </div>
+      </a>
     </div>
     <div class='column'>
-      <div class='white-nohover-row'>
-        {{ user_count_lifetime }}
-      </div>
-    </div>
-  </div>
-  {% if config["SERVER_MODE"] == "paydb" %}
-  <div class='row'>
-    <div class='column'>
-      <div class='row-divider'>
-        Users/Balance(Top 10)
-      </div>
-    </div>
-  </div>
-  <div class='row'>
-    <div class='column'>
-      <div class='title_1line-column-borderless'>
-      </div>
-    </div>
-    <div class='column'>
-      <div class='title_1line-column-borderless'>
-      </div>
-    </div>
-    <div class='column'>
-      <div class='title_1line-column-borderless'>
-      </div>
-    </div>
-    <div class='column'>
-      <a href="download_user_balance">
-      <div class='title_download-user_balance'>
-	      Download User Balance
+      <a href="dashboard_premio_tx_lifetime">
+      <div class='white-row'>
+        {{ premio_tx_count_lifetime }}
       </div>
       </a>
     </div>
   </div>
   <div class='row'>
     <div class='column'>
-      <div class='title-column'>
-        Users
+      <div class='operations_account_column'>
+	      <b> Operations Account: {{ premio_stage_account }}</b>
+        <div class='blue-row'>
+          {{ premio_balance }} {{ config["ASSET_NAME"] }}
+        </div>
       </div>
     </div>
     <div class='column'>
-      <div class='title-column' >
-        Balance(current)
+      <div class='operations_account_column'>
+	<b>Total Balance: </b>
+        <div class='blue-row'>
+	  {{ total_balance }} {{ config["ASSET_NAME"] }}
+        </div>
       </div>
     </div>
   </div>
-  {% for user in users_balances %}
-  <div class='row'>
-    <div class='column'>
-      <div class='title-column'>
-	      {{user.user}}    
-      </div>
-    </div>
-    <div class='column'>
-      <div class='title-column'>
-        {{ user.balance }}
-      </div>
-    </div>
-  </div>
-  {%endfor %}
-  {% endif %}
 </div>
+
+{% if config["USE_REFERRALS"] %}
+    {% include 'referral_settings.html' %}
+{% endif %}
+
 {% endblock %}
