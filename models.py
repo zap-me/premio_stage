@@ -510,6 +510,10 @@ def validate_csv(data):
         rows.append((recipient, message, amount))
     return rows
 
+def format_amount_text(self, context, model, name):
+    amount = int2asset(model.amount)
+    return Markup(amount)
+
 def format_amount(self, context, model, name):
     amount = int2asset(model.amount)
     html = '''
@@ -599,6 +603,16 @@ def get_statuses():
         for proposal_status_a, proposal_status_b in g.statuses:
             yield proposal_status_a, proposal_status_b
 
+def get_actions():
+    # prevent database access when app is not yet ready
+    if has_app_context():
+        if not hasattr(g, 'actions'):
+            query = PayDbTransaction.query.group_by(PayDbTransaction.action).distinct(PayDbTransaction.action)
+            # pylint: disable=assigning-non-slot
+            g.actions = [(PayDbTransaction.action, PayDbTransaction.action) for PayDbTransaction in query]
+        for pay_db_transaction_action_a, pay_db_transaction_action_b in g.actions:
+            yield pay_db_transaction_action_a, pay_db_transaction_action_b
+
 class FilterByProposer(BaseSQLAFilter):
     def apply(self, query, value, alias=None):
         return query.filter(Proposal.proposer_id == value)
@@ -679,6 +693,17 @@ class FilterByRecipientTokenSearch(BaseSQLAFilter):
     def get_options(self, view):
         # return a generator that is reloaded each time it is used
         return ReloadingIterator(get_users)
+
+class FilterByAction(BaseSQLAFilter):
+    def apply(self, query, value, alias=None):
+        return query.filter(PayDbTransaction.action == value)
+
+    def operation(self):
+        return u'equals'
+
+    def get_options(self, view):
+        # return a generator that is reloaded each time it is used
+        return ReloadingIterator(get_actions)
 
 class ProposalModelView(BaseModelView):
     can_create = False
@@ -794,6 +819,7 @@ class ProposalModelView(BaseModelView):
             res, msg, csv_rows = self._validate_form(form)
             if not res:
                 raise validators.ValidationError(msg)
+            w
             # generate model defaults
             model.generate_defaults()
             # set proposer
@@ -1160,7 +1186,9 @@ class PayDbAdminTransactionsView(RestrictedModelView):
     column_formatters = {'amount': format_amount, 'date': format_date}
     column_filters = [ DateBetweenFilter(PayDbTransaction.date, 'Search Date'), \
             FilterBySenderTokenSearch(PayDbTransaction.sender_token, 'Search Sender'), \
-            FilterByRecipientTokenSearch(PayDbTransaction.recipient_token, 'Search Recipient') ]
+            FilterByRecipientTokenSearch(PayDbTransaction.recipient_token, 'Search Recipient'), FilterByAction(PayDbTransaction.action, 'Search Action') ]
+    column_export_list = ('sender', 'recipient', 'token', 'date', 'action', 'amount', 'attachment')
+    column_formatters_export = {'amount': format_amount_text}
 
 class UserStash(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -1325,3 +1353,7 @@ class Referral(db.Model):
     def from_user(cls, session, user):
         return session.query(cls).filter(cls.user_id == user.id).all()
 
+class CategoryModelView(RestrictedModelView):
+    can_create = True
+    can_delete = False
+    can_edit = False

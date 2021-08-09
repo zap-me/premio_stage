@@ -53,6 +53,56 @@
   font-weight: bold;
   font-size: 100%;
 }
+.row-2line-title-white-transactioncount {
+  background-color: white;
+  border-width: 1px;
+  border-style: solid;
+  border-color: #add3e6;
+  border-radius: 10px;
+  height: 100px;
+  margin: 5px;
+  text-align: center;
+  padding: 25px;
+  font-weight: bold;
+  font-size: 100%;
+}
+.row-2line-title-white-transactioncount:hover + .hide{
+  display: block;
+}
+.row-2line-title-white-noofproposals {
+  position: relative;
+  background-color: white;
+  border-width: 1px;
+  border-style: solid;
+  border-color: #add3e6;
+  border-radius: 10px;
+  height: 100px;
+  margin: 5px;
+  text-align: center;
+  text-decoration: none;
+  padding: 25px;
+  font-weight: bold;
+  font-size: 100%;
+}
+.row-2line-title-white-noofproposals:hover + .hide{
+  display: block;
+}
+.hide{
+  display: none;
+  position: absolute;
+  background-color: #ebfbfb;
+  border-width: 1px;
+  border-style: dashed;
+  border-color: #add3e6;
+  border-radius: 10px; 
+  height: 50px;
+  margin: 5px;
+  text-align: center;
+  text-decoration: none;
+  padding: 10px;
+  font-size: 100%;
+  left: 25%;
+}
 .white-row {
   background-color: white;
   border-width: 1px;
@@ -137,7 +187,11 @@
   padding: 10px;
   font-size: 150%;
 }
+.row-1line-title-green:hover + .hide{
+  display: block;
+}
 .row-1line-title-green {
+  position: relative;
   background-color: #d9fce9;
   border-width: 1px;
   border-style: solid;
@@ -150,7 +204,11 @@
   font-weight: bold;
   font-size: 100%;
 }
+.row-1line-title-orange:hover + .hide{
+  display: block;
+}
 .row-1line-title-orange {
+  position: relative;
   background-color: #f8e9d0;
   border-width: 1px;
   border-style: solid;
@@ -163,7 +221,11 @@
   font-weight: bold;
   font-size: 100%;
 }
+.row-1line-title-red:hover + .hide{
+  display: block;
+}
 .row-1line-title-red {
+  position: relative;
   background-color: #fff9fa;
   border-width: 1px;
   border-style: solid;
