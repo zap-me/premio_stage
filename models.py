@@ -200,7 +200,7 @@ class ApiKey(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     token = db.Column(db.String(255), unique=True, nullable=False)
     secret = db.Column(db.String(255), nullable=False)
-    nonce = db.Column(db.Integer, nullable=False)
+    nonce = db.Column(db.BigInteger, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     user = db.relationship('User', backref=db.backref('api_keys', lazy='dynamic'))
     device_name = db.Column(db.String(255))
@@ -256,6 +256,7 @@ class ApiKeyRequest(db.Model):
 class PayDbTransactionSchema(Schema):
     token = fields.String()
     date = fields.String()
+    timestamp = fields.Integer()
     action = fields.String()
     sender = fields.String()
     recipient = fields.String()
@@ -280,13 +281,18 @@ class PayDbTransaction(db.Model):
 
     def __init__(self, action, sender, recipient, amount, attachment):
         self.token = secrets.token_urlsafe(8)
-        self.timestamp = int(time.time())
         self.date = datetime.datetime.now()
         self.action = action
         self.sender = sender
         self.recipient = recipient
         self.amount = amount
         self.attachment = attachment
+
+    @property
+    def timestamp(self):
+        if not self.date:
+            return 0
+        return int(datetime.datetime.timestamp(self.date))
 
     @classmethod
     def from_token(cls, session, token):
@@ -306,7 +312,7 @@ class PayDbTransaction(db.Model):
 
     def to_json(self):
         tx_schema = PayDbTransactionSchema()
-        return tx_schema.dump(self).data
+        return tx_schema.dump(self)
 
 class Payment(db.Model):
     STATE_CREATED = "created"
@@ -327,6 +333,8 @@ class Payment(db.Model):
     txid = db.Column(db.String(255))
 
     def __init__(self, proposal, mobile, email, recipient, message, amount):
+        assert amount is not None
+        assert amount > 0
         self.proposal = proposal
         self.token = generate_key(8)
         self.mobile = mobile
@@ -769,6 +777,8 @@ class ProposalModelView(BaseModelView):
             return Markup('-')
         total = 0
         for payment in model.payments:
+            if payment.amount is None:
+                return '!ERR!'
             total += payment.amount
         total = int2asset(total)
         return Markup(total)
@@ -1086,7 +1096,7 @@ class WavesTx(db.Model):
 
     def to_json(self):
         tx_schema = WavesTxSchema()
-        return tx_schema.dump(self).data
+        return tx_schema.dump(self)
 
     def tx_with_sigs(self):
         tx = json.loads(self.json_data)

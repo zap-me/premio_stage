@@ -17,6 +17,8 @@ import qrcode.image.pil
 from app_core import app
 
 def int2asset(num):
+    if num is None:
+        return '!ERR!'
     num = decimal.Decimal(num)/100
     return '{num:0.2f}'.format(num=num)
 
@@ -57,12 +59,6 @@ def email_payment_claim(logger, asset_name, payment, hours_expiry):
     url = url_for("claim_payment", token=payment.token, _external=True)
     msg = f"You have a {asset_name} payment waiting!<br/><br/>Claim your payment <a href='{url}'>here</a><br/><br/>Claim within {hours_expiry} hours"
     send_email(logger, f"Claim your {asset_name} payment", msg, payment.email)
-
-def email_payment_sent(logger, asset_name, payment):
-    amount = int2asset(payment.amount)
-    asset_name = app.config["ASSET_NAME"]
-    msg = f"You have been sent a {asset_name} payment of {amount} {asset_name}!<br/><br/>Message: {payment.message}"
-    send_email(logger, f"Received {asset_name} payment", msg, payment.email)
 
 def email_user_create_request(logger, req, minutes_expiry):
     url = url_for("paydb.user_registration_confirm", token=req.token, _external=True)

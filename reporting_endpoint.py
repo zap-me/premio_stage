@@ -10,9 +10,10 @@ from sqlalchemy import func, and_
 from flask import Blueprint, render_template, request, jsonify, flash, redirect
 from flask_admin import BaseView
 from flask_security import roles_accepted, current_user
+import requests
 
-from app_core import db
-from models import User, Proposal, Payment, PayDbTransaction
+from app_core import db, app, SERVER_MODE_WAVES
+from models import Role, User, Proposal, Payment, PayDbTransaction
 import utils
 from web_utils import bad_request, get_json_params
 import web_utils
@@ -20,6 +21,14 @@ import paydb_core
 
 logger = logging.getLogger(__name__)
 reporting = Blueprint('reporting', __name__, template_folder='templates/reporting')
+
+SERVER_MODE = app.config["SERVER_MODE"]
+if SERVER_MODE == SERVER_MODE_WAVES:
+    # wave specific config settings
+    NODE_BASE_URL = app.config["NODE_BASE_URL"]
+    ADDRESS = app.config["WALLET_ADDRESS"]
+    ASSET_ID = app.config["ASSET_ID"]
+    TESTNET = app.config["TESTNET"]
 
 ### FREQUECNY DATES USED
 today = date.today()
@@ -202,3 +211,176 @@ def transaction_count(table, start_date, end_date):
         result = 0
     return result
 
+def from_int_to_user_friendly(val, divisor, decimal_places=4):
+    if not isinstance(val, int):
+        return val
+    val = val / divisor
+    return round(val, decimal_places)
+
+
+def dashboard_data_waves():
+    # get balance of local wallet
+    url = NODE_BASE_URL + f"/assets/balance/{ADDRESS}/{ASSET_ID}"
+    logger.info("requesting %s..", url)
+    response = requests.get(url)
+    try:
+        asset_balance = response.json()["balance"]
+    except: # pylint: disable=bare-except
+        logger.error("failed to parse response")
+        asset_balance = "n/a"
+    url = NODE_BASE_URL + f"/addresses/balance/{ADDRESS}"
+    logger.info("requesting %s..", url)
+    response = requests.get(url)
+    try:
+        waves_balance = response.json()["balance"]
+    except: # pylint: disable=bare-except
+        logger.error("failed to parse response")
+        waves_balance = "n/a"
+    # get the balance of the main wallet
+    url = NODE_BASE_URL + f"/transactions/info/{ASSET_ID}"
+    logger.info("requesting %s..", url)
+    response = requests.get(url)
+    try:
+        issuer = response.json()["sender"]
+        url = NODE_BASE_URL + f"/assets/balance/{issuer}/{ASSET_ID}"
+        logger.info("requesting %s..", url)
+        response = requests.get(url)
+        master_asset_balance = response.json()["balance"]
+        url = NODE_BASE_URL + f"/addresses/balance/{issuer}"
+        logger.info("requesting %s..", url)
+        response = requests.get(url)
+        master_waves_balance = response.json()["balance"]
+    except: # pylint: disable=bare-except
+        logger.error("failed to parse response")
+        issuer = "n/a"
+        master_waves_balance = "n/a"
+        master_asset_balance = "n/a"
+    # return data
+    return {"asset_balance": asset_balance, "asset_address": ADDRESS, "waves_balance": waves_balance, \
+            "master_asset_balance": master_asset_balance, "master_waves_balance": master_waves_balance, "master_waves_address": issuer, \
+            "asset_id": ASSET_ID, \
+            "testnet": TESTNET, \
+            "premio_qrcode": utils.qrcode_svg_create(ADDRESS), \
+            "issuer_qrcode": utils.qrcode_svg_create(issuer), \
+            "wavesexplorer": app.config["WAVESEXPLORER"]}
+
+def dashboard_data_paydb():
+    premio_stage_balance = -1
+    premio_stage_account = app.config['OPERATIONS_ACCOUNT']
+    user = User.from_email(db.session, premio_stage_account)
+    if user:
+        premio_stage_balance = paydb_core.user_balance_from_user(db.session, user)
+    total_balance = paydb_core.balance_total(db.session)
+    # return data
+    return {"premio_stage_balance": premio_stage_balance, "premio_stage_account": premio_stage_account, \
+            "total_balance": total_balance}
+
+@reporting.route("/dashboard")
+@roles_accepted(Role.ROLE_ADMIN)
+def dashboard():
+    if SERVER_MODE == SERVER_MODE_WAVES:
+        data = dashboard_data_waves()
+        data["asset_balance"] = utils.int2asset(data["asset_balance"])
+        data["waves_balance"] = from_int_to_user_friendly(data["waves_balance"], 10**8)
+        data["master_asset_balance"] = utils.int2asset(data["master_asset_balance"])
+        data["master_waves_balance"] = from_int_to_user_friendly(data["master_waves_balance"], 10**8)
+        return render_template("reporting/dashboard_waves.html", data=data)
+    data = dashboard_data_paydb()
+    data["premio_stage_balance"] = utils.int2asset(data["premio_stage_balance"])
+    data["total_balance"] = utils.int2asset(data["total_balance"])
+    return report_dashboard(data["premio_stage_balance"], data["premio_stage_account"], data["total_balance"])
+
+@reporting.route("/dashboard_report")
+@roles_accepted(Role.ROLE_ADMIN)
+def dashboard_report():
+    if SERVER_MODE == SERVER_MODE_WAVES:
+        data = dashboard_data_waves()
+        data["asset_balance"] = utils.int2asset(data["asset_balance"])
+        data["waves_balance"] = from_int_to_user_friendly(data["waves_balance"], 10**8)
+        data["master_asset_balance"] = utils.int2asset(data["master_asset_balance"])
+        data["master_waves_balance"] = from_int_to_user_friendly(data["master_waves_balance"], 10**8)
+        return render_template("reporting/dashboard_waves.html", data=data)
+    data = dashboard_data_paydb()
+    data["premio_stage_balance"] = utils.int2asset(data["premio_stage_balance"])
+    data["total_balance"] = utils.int2asset(data["total_balance"])
+    return report_dashboard(data["premio_stage_balance"], data["premio_stage_account"], data["total_balance"])
+
+### List username with their balances
+@reporting.route("/dashboard_user_balance")
+@roles_accepted(Role.ROLE_ADMIN)
+def dashboard_user_balance():
+    return report_user_balance()
+
+### Premio Txs Dashboard
+@reporting.route("/dashboard_premio_tx_today")
+@roles_accepted(Role.ROLE_ADMIN)
+def dashboard_premio_tx_today():
+    today = str('today')
+    return report_premio_txs(today)
+
+@reporting.route("/dashboard_premio_tx_yesterday")
+@roles_accepted(Role.ROLE_ADMIN)
+def dashboard_premio_tx_yesterday():
+    yesterday = str('yesterday')
+    return report_premio_txs(yesterday)
+
+@reporting.route("/dashboard_premio_tx_week")
+@roles_accepted(Role.ROLE_ADMIN)
+def dashboard_premio_tx_week():
+    week = str('week')
+    return report_premio_txs(week)
+
+@reporting.route("/dashboard_premio_tx_month")
+@roles_accepted(Role.ROLE_ADMIN)
+def dashboard_premio_tx_month():
+    month = str('month')
+    return report_premio_txs(month)
+
+@reporting.route("/dashboard_premio_tx_year")
+@roles_accepted(Role.ROLE_ADMIN)
+def dashboard_premio_tx_year():
+    year = str('year')
+    return report_premio_txs(year)
+
+@reporting.route("/dashboard_premio_tx_lifetime")
+@roles_accepted(Role.ROLE_ADMIN)
+def dashboard_premio_tx_lifetime():
+    lifetime = str('lifetime')
+    return report_premio_txs(lifetime)
+
+### Proposal Dashboard:
+@reporting.route("/dashboard_proposal_tx_today")
+@roles_accepted(Role.ROLE_ADMIN)
+def dashboard_proposal_tx_today():
+    today = str('today')
+    return report_proposal_txs(today)
+
+@reporting.route("/dashboard_proposal_tx_yesterday")
+@roles_accepted(Role.ROLE_ADMIN)
+def dashboard_proposal_tx_yesterday():
+    yesterday = str('yesterday')
+    return report_proposal_txs(yesterday)
+
+@reporting.route("/dashboard_proposal_tx_week")
+@roles_accepted(Role.ROLE_ADMIN)
+def dashboard_proposal_tx_week():
+    week = str('week')
+    return report_proposal_txs(week)
+
+@reporting.route("/dashboard_proposal_tx_month")
+@roles_accepted(Role.ROLE_ADMIN)
+def dashboard_proposal_tx_month():
+    month = str('month')
+    return report_proposal_txs(month)
+
+@reporting.route("/dashboard_proposal_tx_year")
+@roles_accepted(Role.ROLE_ADMIN)
+def dashboard_proposal_tx_year():
+    year = str('year')
+    return report_proposal_txs(year)
+
+@reporting.route("/dashboard_proposal_tx_lifetime")
+@roles_accepted(Role.ROLE_ADMIN)
+def dashboard_proposal_tx_lifetime():
+    lifetime = str('lifetime')
+    return report_proposal_txs(lifetime)
