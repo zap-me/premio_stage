@@ -5,8 +5,8 @@
 
 {% block content %}
 <a class="btn btn-primary" href="/"><i class="glyphicon glyphicon-chevron-left"></i> Back</a>
-<a class="btn btn-primary" href="/dashboard"><i class="glyphicon glyphicon-chevron-left"></i>&nbspDashboard</a>
-<a class="btn btn-primary" href="/dashboard_user_balance"><i class="glyphicon glyphicon-chevron-left"></i>&nbspUser Balance</a>
+<a class="btn btn-primary" href="dashboard"><i class="glyphicon glyphicon-chevron-left"></i>&nbspDashboard</a>
+<a class="btn btn-primary" href="dashboard_user_balance"><i class="glyphicon glyphicon-chevron-left"></i>&nbspUser Balance</a>
 <div class='some-page-wrapper'>	
   <div class='row'>
     <div class='column'>
@@ -62,42 +62,42 @@
       </div>
     </div>
     <div class='column'>
-      <a href="/dashboard_premio_tx_today">
+      <a href="dashboard_premio_tx_today">
       <div class='white-row'>
 	{{ premio_tx_count_today }}
       </div>
       </a>
     </div>
     <div class='column'>
-      <a href="/dashboard_premio_tx_yesterday">
+      <a href="dashboard_premio_tx_yesterday">
       <div class='white-row'>
         {{ premio_tx_count_yesterday }}
       </div>
       </a>
     </div>
     <div class='column'>
-      <a href="/dashboard_premio_tx_week">
+      <a href="dashboard_premio_tx_week">
       <div class='white-row'>
         {{ premio_tx_count_week }}
       </div>
       </a>
     </div>
     <div class='column'>
-      <a href="/dashboard_premio_tx_month">
+      <a href="dashboard_premio_tx_month">
       <div class='white-row'>
         {{ premio_tx_count_month }}
       </div>
       </a>
     </div>
     <div class='column'>
-      <a href="/dashboard_premio_tx_year">
+      <a href="dashboard_premio_tx_year">
       <div class='white-row'>
         {{ premio_tx_count_year }}
       </div>
       </a>
     </div>
     <div class='column'>
-      <a href="/dashboard_premio_tx_lifetime">
+      <a href="dashboard_premio_tx_lifetime">
       <div class='white-row'>
         {{ premio_tx_count_lifetime }}
       </div>
@@ -118,49 +118,49 @@
       </div>
     </div>
     <div class='column'>
-      <a href="/dashboard_proposal_tx_today">
+      <a href="dashboard_proposal_tx_today">
       <div class='white-row'>
-	      <!--<a href="/dashboard_premio_tx_today">{{ proposal_count_today }}</a>-->
+	      <!--<a href="dashboard_premio_tx_today">{{ proposal_count_today }}</a>-->
 	      {{ proposal_count_today }}
       </div>
       </a>
     </div>
     <div class='column'>
-      <a href="/dashboard_proposal_tx_yesterday">
+      <a href="dashboard_proposal_tx_yesterday">
       <div class='white-row'>
-	      <!--<a href="/dashboard_premio_tx_yesterday">{{ proposal_count_yesterday }}</a>-->
+	      <!--<a href="dashboard_premio_tx_yesterday">{{ proposal_count_yesterday }}</a>-->
 	      {{ proposal_count_yesterday }}
       </div>
       </a>
     </div>
     <div class='column'>
-      <a href="/dashboard_proposal_tx_week">
+      <a href="dashboard_proposal_tx_week">
       <div class='white-row'>
-	      <!--<a href="/dashboard_premio_tx_week">{{ proposal_count_weekly }}</a>-->
+	      <!--<a href="dashboard_premio_tx_week">{{ proposal_count_weekly }}</a>-->
 	      {{ proposal_count_weekly }}
       </div>
       </a>
     </div>
     <div class='column'>
-      <a href="/dashboard_proposal_tx_month">
+      <a href="dashboard_proposal_tx_month">
       <div class='white-row'>
-	      <!--<a href="/dashboard_premio_tx_month">{{ proposal_count_monthly }}</a>-->
+	      <!--<a href="dashboard_premio_tx_month">{{ proposal_count_monthly }}</a>-->
 	      {{ proposal_count_monthly }}
       </div>
       </a>
     </div>
     <div class='column'>
-      <a href="/dashboard_proposal_tx_year">
+      <a href="dashboard_proposal_tx_year">
       <div class='white-row'>
-	      <!--<a href="/dashboard_premio_tx_year">{{ proposal_count_yearly }}</a>-->
+	      <!--<a href="dashboard_premio_tx_year">{{ proposal_count_yearly }}</a>-->
 	      {{ proposal_count_yearly }}
       </div>
       </a>
     </div>
     <div class='column'>
-      <a href="/dashboard_proposal_tx_lifetime">
+      <a href="dashboard_proposal_tx_lifetime">
       <div class='white-row'>
-	      <!--<a href="/dashboard_premio_tx_lifetime">{{ proposal_count_lifetime }}</a>-->
+	      <!--<a href="dashboard_premio_tx_lifetime">{{ proposal_count_lifetime }}</a>-->
 	      {{ proposal_count_lifetime }}
       </div>
       </a>
@@ -303,4 +303,9 @@
     </div>
   </div>
 </div>
+
+{% if config["USE_REFERRALS"] %}
+    {% include 'referral_settings.html' %}
+{% endif %}
+
 {% endblock %}
