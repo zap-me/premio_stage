@@ -1,6 +1,6 @@
 #!/bin/bash
 
-### source the environmentY
+### source the environment
 . <(xargs -0 bash -c 'printf "export %q\n" "$@"' -- < /proc/1/environ)
 
 backup_dir="/opt/backup/temp"
@@ -13,7 +13,7 @@ if [ ! -d ${backup_dir} ]; then
     mkdir -p /opt/backup/temp
 fi
 if [[ -z ${B2_ACCOUNT_ID} || -v ${B2_ACCOUNT_ID} ]]; then
-    echo "${date_format} - HOST ENVIRONMENT - B2_ACCOUNT not configured" >> "${result_dir}/db_backup.log"
+    echo "${date_format} - HOST ENVIRONMENT - B2_ACCOUNT_ID not configured" >> "${result_dir}/db_backup.log"
     exit 1
 fi
 if [[ -z ${B2_APPLICATION_KEY} || -v ${B2_APPLICATION_KEY} ]]; then
@@ -55,6 +55,6 @@ else
     if [ $? = 0 ]; then
         echo "${date_format} - duplicity backup successful" >> "${result_dir}/db_backup.log"
     else
-        echo "${date_format} - duplicity backup failed" >> "${result_dir}/db_backup.log"
+        echo "${date_format} - duplicity backup failed ($?)" >> "${result_dir}/db_backup.log"
     fi
 fi
