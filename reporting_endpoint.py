@@ -277,6 +277,11 @@ def dashboard_data_paydb():
 @reporting.route("/dashboard")
 @roles_accepted(Role.ROLE_ADMIN)
 def dashboard():
+    return redirect('dashboard_general')
+
+@reporting.route("/dashboard_general")
+@roles_accepted(Role.ROLE_ADMIN)
+def dashboard_general():
     if SERVER_MODE == SERVER_MODE_WAVES:
         data = dashboard_data_waves()
         data["asset_balance"] = utils.int2asset(data["asset_balance"])

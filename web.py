@@ -20,7 +20,6 @@ import pywaves
 
 from app_core import app, db, socketio, SERVER_MODE_WAVES, SERVER_MODE_PAYDB
 from models import Role, WavesTx, Proposal, Payment, Topic, PushNotificationLocation
-#from models import Role, User, WavesTx, Proposal, Payment, Topic, PushNotificationLocation
 import utils
 from fcm import FCM
 from web_utils import bad_request, get_json_params, get_json_params_optional
