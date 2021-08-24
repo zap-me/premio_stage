@@ -68,8 +68,8 @@ def email_exception(logger, msg):
 
 def email_payment_claim(logger, asset_name, reward_payment, hours_expiry):
     url = url_for("claim_payment", token=reward_payment.token, _external=True)
-    msg = f"You have a {int2asset(reward_payment.amount)} {asset_name} payment waiting!<br/><br/>Claim your payment <a href='{url}'>here</a><br/><br/>Claim within {hours_expiry} hours"
-    send_email(logger, f"Claim your {asset_name} payment", msg, reward_payment.email)
+    msg = f"You have a {int2asset(reward_payment.amount)} {asset_name} reward waiting!<br/><br/>Claim your reward <a href='{url}'>here</a><br/><br/>Claim within {hours_expiry} hours"
+    send_email(logger, f"Claim your {asset_name} reward", msg, reward_payment.email)
 
 def email_user_create_request(logger, req, minutes_expiry):
     url = url_for("paydb.user_registration_confirm", token=req.token, _external=True)
@@ -91,9 +91,9 @@ def sms_payment_claim(logger, asset_name, reward_payment, hours_expiry):
     #  - the authorization is by the sender email
     #  - the country code is configured by the account
     url = url_for("claim_payment", token=reward_payment.token, _external=True)
-    msg = f"You have a {asset_name} payment waiting! Claim your payment (within {hours_expiry} hours) {url}"
+    msg = f"You have a {asset_name} payment waiting! Claim your reward (within {hours_expiry} hours) {url}"
     email = str(reward_payment.mobile) + "@transmitsms.com"
-    send_sms(logger, "{asset_name} Payment", msg, email)
+    send_sms(logger, "{asset_name} Reward", msg, email)
 
 def email_referral(logger, referral):
     shop_name = app.config["REFERRAL_STORE_NAME"]
