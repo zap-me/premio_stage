@@ -906,7 +906,7 @@ class RewardProposalModelView(BaseModelView):
     form_args = dict(
             reason=dict(label='Reason', validators=[DataRequired()])
             )
-    form_extra_fields = {'recipient': TextField('Recipient'), 'message': TextField('Message'), 'amount': DecimalField('Amount', validators=[validators.Optional()]), 'csvfile': FileField('CSV File')}
+    form_extra_fields = {'recipient': TextField('Recipient *'), 'message': TextField('Message *'), 'amount': DecimalField('Amount *', validators=[validators.Optional()]), 'csvfile': FileField('CSV File')}
 
     def _validate_form(self, form):
         csv_rows = None
@@ -1061,6 +1061,7 @@ class UserModelView(BaseModelView):
 
 class AdminUserModelView(UserModelView):
     column_editable_list = ['roles', 'active']
+    column_export_list = ('first_name', 'last_name', 'mobile_number', 'address', 'token', 'email', 'roles', 'active', 'confirmed_at')
 
     def is_accessible(self):
         if not (current_user.is_active and current_user.is_authenticated):
@@ -1488,3 +1489,20 @@ class Referral(db.Model):
     @classmethod
     def from_user(cls, session, user):
         return session.query(cls).filter(cls.user_id == user.id).all()
+
+class CategoryModelView(RestrictedModelView):
+    can_create = False
+    can_delete = False
+    can_edit = False
+
+    form_columns = ['name', 'description']
+
+    def is_accessible(self):
+        if not (current_user.is_active and current_user.is_authenticated):
+            return False
+        if current_user.has_role(Role.ROLE_ADMIN):
+            self.can_create = True
+            return True
+        if current_user.has_role(Role.ROLE_FINANCE):
+            return True
+        return False

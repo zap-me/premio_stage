@@ -105,6 +105,16 @@ if os.getenv("USE_STASH"):
 else:
     app.config["USE_STASH"] = False
 
+if os.getenv("USE_PUSH_NOTIFICATION"):
+    app.config["USE_PUSH_NOTIFICATION"] = True
+else:
+    app.config["USE_PUSH_NOTIFICATION"] = False
+
+if os.getenv("SHOW_USER_REGISTRATION"):
+    app.config["SHOW_USER_REGISTRATION"] = True
+else:
+    app.config["SHOW_USER_REGISTRATION"] = False
+
 def set_vital_setting(env_name, setting_name=None, acceptable_values=None):
     # pylint: disable=global-statement
     global MISSING_VITAL_SETTING
