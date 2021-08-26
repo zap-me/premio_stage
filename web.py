@@ -364,15 +364,24 @@ def push_notifications_register():
 @roles_accepted(Role.ROLE_ADMIN)
 def issue():
     amount = ''
+    attachment = ''
     if request.method == "POST":
         amount = request.form["amount"]
-        amount_int = int(float(amount) * 100)
-        tx, error = paydb_core.tx_issue_authorized(db.session, current_user.email, amount_int, None)
-        if tx:
-            flash(f"issued {amount}", "success")
+        attachment = request.form["attachment"]
+        amount_int = 0
+        try:
+            amount_int = int(float(amount) * 100)
+        except: # pylint: ignore=bare-except
+            pass
+        if amount_int > 0:
+            tx, error = paydb_core.tx_issue_authorized(db.session, current_user.email, amount_int, attachment)
+            if tx:
+                flash(f"issued {amount}", "success")
+            else:
+                flash(error, "danger")
         else:
-            flash(error, "danger")
-    return render_template("issue.html", amount=amount)
+            flash("invalid amount", "danger")
+    return render_template("issue.html", amount=amount, attachment=attachment)
 
 ##
 ## JSON-RPC
