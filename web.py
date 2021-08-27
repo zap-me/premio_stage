@@ -371,7 +371,7 @@ def issue():
         amount_int = 0
         try:
             amount_int = int(float(amount) * 100)
-        except: # pylint: ignore=bare-except
+        except: # pylint: disable=bare-except
             pass
         if amount_int > 0:
             tx, error = paydb_core.tx_issue_authorized(db.session, current_user.email, amount_int, attachment)
