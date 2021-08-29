@@ -7,7 +7,11 @@
 <a class="btn btn-secondary" href="dashboard_report_proposals"><i class="glyphicon glyphicon-chevron-left"></i>Rewards</a>&nbsp
 <a class="btn btn-primary" href="dashboard_user_balance"><i class="glyphicon glyphicon-chevron-left"></i>Users</a>
 
-<div class='some-page-wrapper'>
+{%- if config["FLASK_ADMIN_SWATCH"] == "slate"%}
+    <div class='some-page-wrapper-dark'>
+{%- else -%}
+    <div class='some-page-wrapper'>
+{%- endif %}
   <div class='row'>
     <div class='column'>
       <div class='row-divider'>

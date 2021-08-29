@@ -26,6 +26,12 @@ if os.getenv("DEBUG"):
 
 app.config.from_pyfile("flask_config.py")
 
+if os.getenv("FLASK_ADMIN_SWATCH"):
+    app.config["FLASK_ADMIN_SWATCH"] = os.getenv("FLASK_ADMIN_SWATCH")
+else:
+    app.config["FLASK_ADMIN_SWATCH"] = "slate"
+    app.config["DASHBOARD_BUTTON_THEME"] = "dark-dashboard"
+
 if os.getenv("TESTNET"):
     app.config["TESTNET"] = True
 else:
@@ -104,6 +110,12 @@ if os.getenv("USE_STASH"):
     app.config["USE_STASH"] = True
 else:
     app.config["USE_STASH"] = False
+
+if os.getenv("DASSET_ACCOUNT_ID"):
+    app.config["DASSET_ACCOUNT_ID"] = os.getenv("DASSET_ACCOUNT_ID")
+
+if os.getenv("DASSET_API_SECRET"):
+    app.config["DASSET_API_SECRET"] = os.getenv("DASSET_API_SECRET")
 
 def set_vital_setting(env_name, setting_name=None, acceptable_values=None):
     # pylint: disable=global-statement

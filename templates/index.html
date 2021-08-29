@@ -2,51 +2,83 @@
 
 {% block content %}
 {% if current_user.is_authenticated %}
+    {%- if config["FLASK_ADMIN_SWATCH"] == "slate"%}
+    <div class='some-page-wrapper-dark'>
+    {%- else -%}
     <div class='some-page-wrapper'>
+    {%- endif %}
         <div class='row'>
             {% if current_user.has_role("admin") %}
             <a href="/reporting/dashboard">
-            <div class='white-dashboard'>
+            {%- if config["FLASK_ADMIN_SWATCH"] == "slate"%}
+            <div class='dark-dashboard'>
+            {%- else -%}
+	    <div class='white-dashboard'>
+	    {%- endif %}
                 <img src="static/assets/img/index_img/dashboard.png" width="100" height="100">
             <p><center>Dashboard</center></p>
             </div>
             </a>
             <a href="/push_notifications">
-            <div class='white-dashboard'>
+            {%- if config["FLASK_ADMIN_SWATCH"] == "slate"%}
+            <div class='dark-dashboard'>
+            {%- else -%}
+	    <div class='white-dashboard'>
+	    {%- endif %}
                 <img src="static/assets/img/index_img/notification.png" width="100" height="100">
             <p><center>Push Notification</center></p>
             </div>
             </a>
             {% if config["SERVER_MODE"] == "paydb" %}
             <a href="/issue">
-            <div class='white-dashboard'>
+            {%- if config["FLASK_ADMIN_SWATCH"] == "slate"%}
+            <div class='dark-dashboard'>
+            {%- else -%}
+	    <div class='white-dashboard'>
+	    {%- endif %}
                 <img src="static/assets/img/index_img/tokens.png" width="100" height="100">
                 <p><center>Issue Token</center></p>
             </div>
             </a>
             {% endif %}
             <a href="{{ url_for('admin.index') }}">
-            <div class='white-dashboard'>
+            {%- if config["FLASK_ADMIN_SWATCH"] == "slate"%}
+            <div class='dark-dashboard'>
+            {%- else -%}
+	    <div class='white-dashboard'>
+	    {%- endif %}
                 <img src="static/assets/img/index_img/admin-with-cogwheels.png" width="100" height="100">
             <p><center>Admin</center></p>
             </div>
             </a>
             {% elif current_user.has_role("finance") %}
             <a href="/reporting/dashboard">
-            <div class='white-dashboard'>
+            {%- if config["FLASK_ADMIN_SWATCH"] == "slate"%}
+            <div class='dark-dashboard'>
+            {%- else -%}
+	    <div class='white-dashboard'>
+	    {%- endif %}
                 <img src="static/assets/img/index_img/dashboard.png" width="100" height="100">
                 <p><center>Dashboard</center></p>
             </div>
             </a>
             <a href="{{ url_for('admin.index') }}">
-            <div class='white-dashboard'>
+            {%- if config["FLASK_ADMIN_SWATCH"] == "slate"%}
+            <div class='dark-dashboard'>
+            {%- else -%}
+	    <div class='white-dashboard'>
+	    {%- endif %}
                 <img src="static/assets/img/index_img/admin-with-cogwheels.png" width="100" height="100">
             <p><center>Admin</center></p>
             </div>
             </a>
             {% elif current_user.has_role("proposer") %}
             <a href="{{ url_for('admin.index') }}">
-            <div class='white-dashboard'>
+            {%- if config["FLASK_ADMIN_SWATCH"] == "slate"%}
+            <div class='dark-dashboard'>
+            {%- else -%}
+	    <div class='white-dashboard'>
+	    {%- endif %}
                 <img src="static/assets/img/index_img/admin-with-cogwheels.png" width="100" height="100">
             <p><center>Admin</center></p>
             </div>
