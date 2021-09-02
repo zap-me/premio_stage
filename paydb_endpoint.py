@@ -16,8 +16,7 @@ import web_utils
 from web_utils import bad_request, get_json_params, check_auth, auth_request, auth_request_get_single_param, auth_request_get_params
 import utils
 from app_core import db, socketio, limiter
-from models import user_datastore, User, UserCreateRequest, UserUpdateEmailRequest, Permission, ApiKey, ApiKeyRequest, PayDbTransaction, BrokerOrder
-import paydb_core
+from models import user_datastore, User, UserCreateRequest, UserUpdateEmailRequest, Permission, ApiKey, ApiKeyRequest, BrokerOrder, KycRequest
 import payments_core
 import dasset
 
@@ -268,11 +267,12 @@ def user_info():
         time.sleep(5)
         return bad_request(web_utils.AUTH_FAILED)
     if user == api_key.user:
-        balance = paydb_core.user_balance(db.session, api_key)
         roles = [role.name for role in api_key.user.roles]
         perms = [perm.name for perm in api_key.permissions]
-        return jsonify(dict(email=user.email, balance=balance, photo=user.photo, photo_type=user.photo_type, roles=roles, permissions=perms))
-    return jsonify(dict(email=user.email, balance=-1, photo=user.photo, photo_type=user.photo_type, roles=[], permissions=[]))
+        kyc_validated = api_key.user.kyc_validated()
+        kyc_url = api_key.user.kyc_url()
+        return jsonify(dict(email=user.email, photo=user.photo, photo_type=user.photo_type, roles=roles, permissions=perms, kyc_validated=kyc_validated, kyc_url=kyc_url))
+    return jsonify(dict(email=user.email, photo=user.photo, photo_type=user.photo_type, roles=[], permissions=[], kyc_validated=None, kyc_url=None))
 
 @paydb.route('/user_reset_password', methods=['POST'])
 @limiter.limit('10/hour')
@@ -343,6 +343,20 @@ def user_update_password():
     db.session.commit()
     return 'password changed.'
 
+@paydb.route('/user_kyc_request_create', methods=['POST'])
+@limiter.limit('10/hour')
+def user_kyc_request_create():
+    api_key, err_response = auth_request(db)
+    if err_response:
+        return err_response
+    if list(api_key.user.kyc_requests):
+        return bad_request(web_utils.KYC_REQUEST_EXISTS)
+    user = api_key.user
+    req = KycRequest(user)
+    db.session.add(req)
+    db.session.commit()
+    return jsonify(dict(kyc_url=req.url()))
+
 @paydb.route('/user_update_photo', methods=['POST'])
 @limiter.limit('10/hour')
 def user_update_photo():
@@ -357,79 +371,29 @@ def user_update_photo():
     db.session.commit()
     return jsonify(dict(photo=user.photo, photo_type=user.photo_type))
 
-@paydb.route('/user_transactions', methods=['POST'])
-def user_transactions():
-    params, api_key, err_response = auth_request_get_params(db, ["offset", "limit"])
-    if err_response:
-        return err_response
-    offset, limit = params
-    if limit > 1000:
-        return bad_request(web_utils.LIMIT_TOO_LARGE)
-    if not api_key.has_permission(Permission.PERMISSION_HISTORY):
-        return bad_request(web_utils.UNAUTHORIZED)
-    txs = PayDbTransaction.related_to_user(db.session, api_key.user, offset, limit)
-    txs = [tx.to_json() for tx in txs]
-    return jsonify(dict(txs=txs))
-
-@paydb.route('/transaction_create', methods=['POST'])
-def transaction_create():
-    params, api_key, err_response = auth_request_get_params(db, ["action", "recipient", "amount", "attachment"])
-    if err_response:
-        return err_response
-    action, recipient, amount, attachment = params
-    if recipient:
-        recipient = recipient.lower()
-    tx, error = paydb_core.tx_create_and_play(db.session, api_key, action, recipient, amount, attachment)
-    if not tx:
-        return bad_request(error)
-    tx_event(tx)
-    return jsonify(dict(tx=tx.to_json()))
-
-@paydb.route('/transaction_info', methods=['POST'])
-def transaction_info():
-    token, api_key, err_response = auth_request_get_single_param(db, "token")
-    if err_response:
-        return err_response
-    tx = PayDbTransaction.from_token(db.session, token)
-    if not tx:
-        return bad_request(web_utils.INVALID_TX)
-    if tx.sender != api_key.user and tx.recipient != api_key.user:
-        return bad_request(web_utils.UNAUTHORIZED)
-    return jsonify(dict(tx=tx.to_json()))
-
 @paydb.route('/assets', methods=['POST'])
 def assets_req():
     _, err_response = auth_request(db)
     if err_response:
         return err_response
-    assets = []
-    for item in dasset.assets_req():
-        decimals = dasset.asset_decimals(item['symbol'])
-        assets.append(dict(symbol=item['symbol'], name=item['name'], coin_type=item['coinType'], status=item['status'], min_confs=item['minConfirmations'], message=item['notice'], decimals=decimals))
-    return jsonify(assets=assets)
+    return jsonify(assets=dasset.assets_req())
 
 @paydb.route('/markets', methods=['POST'])
 def markets_req():
     _, err_response = auth_request(db)
     if err_response:
         return err_response
-    markets = []
-    for item in dasset.markets_req():
-        message = ''
-        if 'notice' in item:
-            message = item['notice']
-        markets.append(dict(symbol=item['symbol'], base_symbol=item['baseCurrencySymbol'], quote_symbol=item['quoteCurrencySymbol'], precision=item['precision'], status=item['status'], min_trade=item['minTradeSize'], message=message))
-    return jsonify(markets=markets)
+    return jsonify(markets=dasset.markets_req())
 
 @paydb.route('/order_book', methods=['POST'])
 def order_book_req():
     symbol, _, err_response = auth_request_get_single_param(db, 'symbol')
     if err_response:
         return err_response
-    if symbol not in dasset.MARKET_LIST:
+    if symbol not in dasset.MARKETS:
         return bad_request(web_utils.INVALID_MARKET)
-    order_book = dasset.order_book_req(symbol)
-    return jsonify(order_book=order_book)
+    order_book, min_order, broker_fee = dasset.order_book_req(symbol)
+    return jsonify(order_book=order_book, min_order=min_order, broker_fee=broker_fee)
 
 @paydb.route('/broker_order_create', methods=['POST'])
 def broker_order_create():
@@ -437,14 +401,19 @@ def broker_order_create():
     if err_response:
         return err_response
     market, side, amount_dec, recipient = params
-    if market not in dasset.MARKET_LIST:
+    if not api_key.user.kyc_validated():
+        return bad_request(web_utils.KYC_NOT_VALIDATED)
+    if market not in dasset.MARKETS:
         return bad_request(web_utils.INVALID_MARKET)
-    if side != 'bid':
+    if side != dasset.MarketSide.BID.value:
         return bad_request(web_utils.INVALID_SIDE)
+    side = dasset.MarketSide.BID
     amount_dec = decimal.Decimal(amount_dec)
-    quote_amount_dec = dasset.bid_quote_amount(market, amount_dec)
-    if quote_amount_dec < 0:
+    quote_amount_dec, err = dasset.bid_quote_amount(market, amount_dec)
+    if err == dasset.QuoteResult.INSUFFICIENT_LIQUIDITY:
         return bad_request(web_utils.INSUFFICIENT_LIQUIDITY)
+    if err == dasset.QuoteResult.AMOUNT_TOO_LOW:
+        return bad_request(web_utils.AMOUNT_TOO_LOW)
     if not dasset.address_validate(market, side, recipient):
         return bad_request(web_utils.INVALID_RECIPIENT)
     base_asset, quote_asset = dasset.assets_from_market(market)

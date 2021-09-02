@@ -4,7 +4,6 @@ import sys
 import logging
 import base64
 import json
-import secrets
 import decimal
 
 from flask import url_for
@@ -19,6 +18,7 @@ from models import WindcavePaymentRequest, PayoutRequest, PayoutGroup, PayoutGro
 logger = logging.getLogger(__name__)
 
 WINDCAVE_API_URL = 'https://sec.windcave.com/api/v1'
+WINDCAVE_MOCK = os.environ.get('WINDCAVE_MOCK', '')
 WINDCAVE_API_USER = os.environ.get('WINDCAVE_API_USER', '')
 WINDCAVE_API_KEY = os.environ.get('WINDCAVE_API_KEY', '')
 PAYOUT_SENDER_NAME = os.environ.get('PAYOUT_SENDER_NAME', '')
@@ -35,6 +35,9 @@ if not PAYOUT_SENDER_NAME:
 if not PAYOUT_SENDER_ACCOUNT:
     logger.error('ERROR: no PAYOUT_SENDER_ACCOUNT')
     sys.exit(1)
+
+def mock():
+    return WINDCAVE_MOCK
 
 def moneyfmt(value, places=2, curr='', sep=',', dpi='.',
              pos='', neg='-', trailneg=''):
@@ -131,24 +134,32 @@ def windcave_get_session_status(windcave_session_id):
     return state, link, tx_state
 
 def payment_create(amount_cents, expiry):
-    token = secrets.token_urlsafe(8)
+    token = utils.generate_key()
     req = WindcavePaymentRequest.from_token(db.session, token)
     if req:
         raise Exception('payment already exists')
     logger.info("creating session with windcave")
-    windcave_session_id, windcave_status = windcave_create_session(amount_cents, token, expiry)
+    if mock():
+        windcave_session_id = token
+        windcave_status = 'created (mock)'
+    else:
+        windcave_session_id, windcave_status = windcave_create_session(amount_cents, token, expiry)
     if not windcave_session_id:
         raise Exception('failed to create windcave session')
     logger.info("creating payment request object for %s", token)
     req = WindcavePaymentRequest(token, 'NZD', amount_cents, windcave_session_id, windcave_status)
     return req
 
-def payment_request_status(req):
-    completed = req.status == req.STATUS_COMPLETED
-    cancelled = req.status == req.STATUS_CANCELLED
-    return completed, cancelled
+def payment_request_mock_confirm(req):
+    assert mock()
+    req.windcave_status = 'confirmed (mock)'
+    req.windcave_authorised = True
 
 def payment_request_status_update(req):
+    if mock():
+        if req.windcave_status == 'confirmed (mock)':
+            req.status = req.STATUS_COMPLETED
+        return
     # get status from windcave
     state, windcave_url, tx_state = windcave_get_session_status(req.windcave_session_id)
     req.windcave_status = state
@@ -159,9 +170,7 @@ def payment_request_status_update(req):
             req.status = req.STATUS_CANCELLED
         req.windcave_authorised = tx_state[0]
         req.windcave_allow_retry = tx_state[1]
-    completed = req.status == req.STATUS_COMPLETED
-    cancelled = req.status == req.STATUS_CANCELLED
-    return completed, cancelled, windcave_url
+        req.windcave_url = windcave_url
 
 def payout_create(amount, sender_reference, sender_code, account_name, account_number, reference, code, particulars):
     # create payout request

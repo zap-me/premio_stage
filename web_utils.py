@@ -27,10 +27,13 @@ INVALID_AMOUNT = 'invalid amount'
 INVALID_MARKET = 'invalid market'
 INVALID_SIDE = 'invalid side'
 INSUFFICIENT_LIQUIDITY = 'insufficient liquidity'
+AMOUNT_TOO_LOW = 'amount too low'
 INVALID_RECIPIENT = 'invalid recipient'
 EXPIRED = 'expired'
 INVALID_STATUS = 'invalid status'
 FAILED_PAYMENT_CREATE = 'failed payment create'
+KYC_REQUEST_EXISTS = 'kyc request exists'
+KYC_NOT_VALIDATED = 'kyc not validated'
 
 def bad_request(message, code=400):
     logger.warning(message)
