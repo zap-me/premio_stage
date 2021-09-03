@@ -24,9 +24,17 @@ app.config.from_pyfile("flask_config.py")
 
 if os.getenv("FLASK_ADMIN_SWATCH"):
     app.config["FLASK_ADMIN_SWATCH"] = os.getenv("FLASK_ADMIN_SWATCH")
-else:
-    app.config["FLASK_ADMIN_SWATCH"] = "slate"
+#else:
+#    app.config["FLASK_ADMIN_SWATCH"] = "slate"
+#    app.config["DASHBOARD_BUTTON_THEME"] = "dark-dashboard"
+#    app.config["DASHBOARD_PAGE_WRAPPER"] = "some-page-wrapper-dark"
+
+if os.getenv("FLASK_ADMIN_SWATCH") == "slate":
     app.config["DASHBOARD_BUTTON_THEME"] = "dark-dashboard"
+    app.config["DASHBOARD_PAGE_WRAPPER"] = "some-page-wrapper-dark"
+else:
+    app.config["DASHBOARD_BUTTON_THEME"] = "white-dashboard"
+    app.config["DASHBOARD_PAGE_WRAPPER"] = "some-page-wrapper"
 
 if os.getenv("TESTNET"):
     app.config["TESTNET"] = True
@@ -35,7 +43,7 @@ else:
 if os.getenv("DATABASE_URL"):
     app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
 else:
-    if app.config["TESTNET"]:
+    IF App.config["TESTNET"]:
         DATABASE_FILE = 'premio_stage_testnet.db'
     else:
         DATABASE_FILE = 'premio_stage.db'
