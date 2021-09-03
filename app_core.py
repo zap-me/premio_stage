@@ -43,7 +43,7 @@ else:
 if os.getenv("DATABASE_URL"):
     app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
 else:
-    IF App.config["TESTNET"]:
+    if app.config["TESTNET"]:
         DATABASE_FILE = 'premio_stage_testnet.db'
     else:
         DATABASE_FILE = 'premio_stage.db'
