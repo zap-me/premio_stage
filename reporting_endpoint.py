@@ -2,7 +2,6 @@
 # pylint: disable=too-many-locals
 
 import logging
-import datetime
 from datetime import date, timedelta
 from dateutil.relativedelta import relativedelta
 from sqlalchemy import func, and_
@@ -27,29 +26,25 @@ if SERVER_MODE == SERVER_MODE_WAVES:
     ASSET_ID = app.config["ASSET_ID"]
     TESTNET = app.config["TESTNET"]
 
-### FREQUECNY DATES USED
-TODAY = date.today()
-YESTERDAY = TODAY - timedelta(days=1)
-TOMORROW = TODAY + timedelta(days=1)
-WEEKDAY = TODAY.weekday()
-MONDAY = TODAY - timedelta(days=WEEKDAY)
-SUNDAY = TODAY + timedelta(days=(6 - WEEKDAY))
-NEXT_MONDAY = TODAY + datetime.timedelta(days=-TODAY.weekday(), weeks=1)
-FIRST_DAY_CURRENT_MONTH = TODAY.replace(day=1)
-FIRST_DAY_NEXT_MONTH = FIRST_DAY_CURRENT_MONTH + relativedelta(months=+1)
-LAST_DAY_NEXT_MONTH = FIRST_DAY_NEXT_MONTH - timedelta(days=1)
-FIRST_DAY_CURRENT_YEAR = FIRST_DAY_CURRENT_MONTH + relativedelta(month=1)
-FIRST_DAY_NEXT_YEAR = FIRST_DAY_CURRENT_YEAR + relativedelta(years=+1)
-LAST_DAY_CURRENT_YEAR = FIRST_DAY_NEXT_YEAR - timedelta(days=1)
+#### FREQUECNY DATES USED
+TODAY = lambda: date.today() # pylint: disable=unnecessary-lambda
+YESTERDAY = lambda: date.today() - timedelta(days=1)
+TOMORROW = lambda: date.today() + timedelta(days=1)
+WEEKDAY = lambda: date.today().weekday()
+MONDAY = lambda: date.today() - timedelta(days=date.today().weekday())
+NEXT_MONDAY = lambda: date.today() + timedelta(days=-date.today().weekday(), weeks=1)
+FIRST_DAY_CURRENT_MONTH = lambda: date.today().replace(day=1)
+FIRST_DAY_NEXT_MONTH = lambda: date.today().replace(day=1) + relativedelta(months=+1)
+FIRST_DAY_CURRENT_YEAR = lambda: date.today().replace(day=1) + relativedelta(month=1)
+FIRST_DAY_NEXT_YEAR = lambda: date.today().replace(day=1) + relativedelta(month=1, years=+1)
 
 def report_dashboard_premio(premio_balance, premio_stage_account, total_balance, claimable):
-    ### Premio (PayDbTransaction)
     premio_tx_count_lifetime = PayDbTransaction.query.count()
-    premio_tx_count_today = transaction_count(PayDbTransaction, TODAY, TOMORROW)
-    premio_tx_count_yesterday = transaction_count(PayDbTransaction, YESTERDAY, TODAY)
-    premio_tx_count_week = transaction_count(PayDbTransaction, MONDAY, NEXT_MONDAY)
-    premio_tx_count_month = transaction_count(PayDbTransaction, FIRST_DAY_CURRENT_MONTH, FIRST_DAY_NEXT_MONTH)
-    premio_tx_count_year = transaction_count(PayDbTransaction, FIRST_DAY_CURRENT_YEAR, FIRST_DAY_NEXT_YEAR)
+    premio_tx_count_today = transaction_count(PayDbTransaction, TODAY(), TOMORROW())
+    premio_tx_count_yesterday = transaction_count(PayDbTransaction, YESTERDAY(), TODAY())
+    premio_tx_count_week = transaction_count(PayDbTransaction, MONDAY(), NEXT_MONDAY())
+    premio_tx_count_month = transaction_count(PayDbTransaction, FIRST_DAY_CURRENT_MONTH(), FIRST_DAY_NEXT_MONTH())
+    premio_tx_count_year = transaction_count(PayDbTransaction, FIRST_DAY_CURRENT_YEAR(), FIRST_DAY_NEXT_YEAR())
     return render_template('reporting/dashboard_paydb_premio.html', premio_balance=premio_balance, premio_stage_account=premio_stage_account, total_balance=total_balance, claimable=claimable, \
         premio_tx_count_lifetime=premio_tx_count_lifetime, \
         premio_tx_count_today=premio_tx_count_today, premio_tx_count_yesterday=premio_tx_count_yesterday, \
@@ -58,27 +53,27 @@ def report_dashboard_premio(premio_balance, premio_stage_account, total_balance,
 def report_dashboard_proposals():
     ### RewardProposal queries
     proposal_count = RewardProposal.query.count()
-    proposal_count_today = transaction_count(RewardProposal, TODAY, TOMORROW)
-    proposal_count_yesterday = transaction_count(RewardProposal, YESTERDAY, TODAY)
-    proposal_count_weekly = transaction_count(RewardProposal, MONDAY, NEXT_MONDAY)
-    proposal_count_monthly = transaction_count(RewardProposal, FIRST_DAY_CURRENT_MONTH, FIRST_DAY_NEXT_MONTH)
-    proposal_count_yearly = transaction_count(RewardProposal, FIRST_DAY_CURRENT_YEAR, FIRST_DAY_NEXT_YEAR)
+    proposal_count_today = transaction_count(RewardProposal, TODAY(), TOMORROW())
+    proposal_count_yesterday = transaction_count(RewardProposal, YESTERDAY(), TODAY())
+    proposal_count_weekly = transaction_count(RewardProposal, MONDAY(), NEXT_MONDAY())
+    proposal_count_monthly = transaction_count(RewardProposal, FIRST_DAY_CURRENT_MONTH(), FIRST_DAY_NEXT_MONTH())
+    proposal_count_yearly = transaction_count(RewardProposal, FIRST_DAY_CURRENT_YEAR(), FIRST_DAY_NEXT_YEAR())
     ### RewardPayment queries
-    payment_query_today = claimed_proposal_payment(RewardProposal, RewardPayment, TODAY, TOMORROW)
-    unclaimed_payment_query_today = unclaimed_proposal_payment(RewardProposal, RewardPayment, TODAY, TOMORROW)
-    total_payment_query_today = total_proposal_payment(RewardProposal, RewardPayment, TODAY, TOMORROW)
-    payment_query_yesterday = claimed_proposal_payment(RewardProposal, RewardPayment, YESTERDAY, TODAY)
-    unclaimed_payment_yesterday = unclaimed_proposal_payment(RewardProposal, RewardPayment, YESTERDAY, TODAY)
-    total_payment_query_yesterday = total_proposal_payment(RewardProposal, RewardPayment, YESTERDAY, TODAY)
-    payment_query_weekly = claimed_proposal_payment(RewardProposal, RewardPayment, MONDAY, NEXT_MONDAY)
-    unclaimed_payment_query_weekly = unclaimed_proposal_payment(RewardProposal, RewardPayment, MONDAY, NEXT_MONDAY)
-    total_payment_query_weekly = total_proposal_payment(RewardProposal, RewardPayment, MONDAY, NEXT_MONDAY)
-    payment_query_monthly = claimed_proposal_payment(RewardProposal, RewardPayment, FIRST_DAY_CURRENT_MONTH, FIRST_DAY_NEXT_MONTH)
-    unclaimed_payment_query_monthly = unclaimed_proposal_payment(RewardProposal, RewardPayment, FIRST_DAY_CURRENT_MONTH, FIRST_DAY_NEXT_MONTH)
-    total_payment_query_monthly = total_proposal_payment(RewardProposal, RewardPayment, FIRST_DAY_CURRENT_MONTH, FIRST_DAY_NEXT_MONTH)
-    payment_query_yearly = claimed_proposal_payment(RewardProposal, RewardPayment, FIRST_DAY_CURRENT_YEAR, FIRST_DAY_NEXT_YEAR)
-    unclaimed_payment_query_yearly = unclaimed_proposal_payment(RewardProposal, RewardPayment, FIRST_DAY_CURRENT_YEAR, FIRST_DAY_NEXT_YEAR)
-    total_payment_query_yearly = total_proposal_payment(RewardProposal, RewardPayment, FIRST_DAY_CURRENT_YEAR, FIRST_DAY_NEXT_YEAR)
+    payment_query_today = claimed_proposal_payment(RewardProposal, RewardPayment, TODAY(), TOMORROW())
+    unclaimed_payment_query_today = unclaimed_proposal_payment(RewardProposal, RewardPayment, TODAY(), TOMORROW())
+    total_payment_query_today = total_proposal_payment(RewardProposal, RewardPayment, TODAY(), TOMORROW())
+    payment_query_yesterday = claimed_proposal_payment(RewardProposal, RewardPayment, YESTERDAY(), TODAY())
+    unclaimed_payment_yesterday = unclaimed_proposal_payment(RewardProposal, RewardPayment, YESTERDAY(), TODAY())
+    total_payment_query_yesterday = total_proposal_payment(RewardProposal, RewardPayment, YESTERDAY(), TODAY())
+    payment_query_weekly = claimed_proposal_payment(RewardProposal, RewardPayment, MONDAY(), NEXT_MONDAY())
+    unclaimed_payment_query_weekly = unclaimed_proposal_payment(RewardProposal, RewardPayment, MONDAY(), NEXT_MONDAY())
+    total_payment_query_weekly = total_proposal_payment(RewardProposal, RewardPayment, MONDAY(), NEXT_MONDAY())
+    payment_query_monthly = claimed_proposal_payment(RewardProposal, RewardPayment, FIRST_DAY_CURRENT_MONTH(), FIRST_DAY_NEXT_MONTH())
+    unclaimed_payment_query_monthly = unclaimed_proposal_payment(RewardProposal, RewardPayment, FIRST_DAY_CURRENT_MONTH(), FIRST_DAY_NEXT_MONTH())
+    total_payment_query_monthly = total_proposal_payment(RewardProposal, RewardPayment, FIRST_DAY_CURRENT_MONTH(), FIRST_DAY_NEXT_MONTH())
+    payment_query_yearly = claimed_proposal_payment(RewardProposal, RewardPayment, FIRST_DAY_CURRENT_YEAR(), FIRST_DAY_NEXT_YEAR())
+    unclaimed_payment_query_yearly = unclaimed_proposal_payment(RewardProposal, RewardPayment, FIRST_DAY_CURRENT_YEAR(), FIRST_DAY_NEXT_YEAR())
+    total_payment_query_yearly = total_proposal_payment(RewardProposal, RewardPayment, FIRST_DAY_CURRENT_YEAR(), FIRST_DAY_NEXT_YEAR())
     payment_query_lifetime = claimed_lifetime(RewardProposal, RewardPayment)
     unclaimed_payment_lifetime = unclaimed_lifetime(RewardProposal, RewardPayment)
     total_payment_query_lifetime = total_lifetime(RewardProposal, RewardPayment)
@@ -101,11 +96,11 @@ def report_user_balance():
     ### User queries
     users = User.query.all()
     user_count = User.query.count()
-    user_count_today = user_counting(User, TODAY, TOMORROW)
-    user_count_yesterday = user_counting(User, YESTERDAY, TODAY)
-    user_count_weekly = user_counting(User, MONDAY, NEXT_MONDAY)
-    user_count_monthly = user_counting(User, FIRST_DAY_CURRENT_MONTH, FIRST_DAY_NEXT_MONTH)
-    user_count_yearly = user_counting(User, FIRST_DAY_CURRENT_YEAR, FIRST_DAY_NEXT_YEAR)
+    user_count_today = user_counting(User, TODAY(), TOMORROW())
+    user_count_yesterday = user_counting(User, YESTERDAY(), TODAY())
+    user_count_weekly = user_counting(User, MONDAY(), NEXT_MONDAY())
+    user_count_monthly = user_counting(User, FIRST_DAY_CURRENT_MONTH(), FIRST_DAY_NEXT_MONTH())
+    user_count_yearly = user_counting(User, FIRST_DAY_CURRENT_YEAR(), FIRST_DAY_NEXT_YEAR())
     users_balances = []
     for account_user in users:
         user = User.from_email(db.session, account_user.email)
@@ -123,15 +118,15 @@ def report_premio_txs(frequency):
     if frequency == 'lifetime':
         return redirect(str(paydbtransactions_url))
     if frequency == 'today':
-        return redirect(str(paydbtransactions_url)+str(paydbtransactions_filter)+str(TODAY)+'+to+'+str(TOMORROW))
+        return redirect(str(paydbtransactions_url)+str(paydbtransactions_filter)+str(TODAY())+'+to+'+str(TOMORROW()))
     if frequency == 'yesterday':
-        return redirect(str(paydbtransactions_url)+str(paydbtransactions_filter)+str(YESTERDAY)+'+to+'+str(TODAY))
+        return redirect(str(paydbtransactions_url)+str(paydbtransactions_filter)+str(YESTERDAY())+'+to+'+str(TODAY()))
     if frequency == 'week':
-        return redirect(str(paydbtransactions_url)+str(paydbtransactions_filter)+str(MONDAY)+'+to+'+str(NEXT_MONDAY))
+        return redirect(str(paydbtransactions_url)+str(paydbtransactions_filter)+str(MONDAY())+'+to+'+str(NEXT_MONDAY()))
     if frequency == 'month':
-        return redirect(str(paydbtransactions_url)+str(paydbtransactions_filter)+str(FIRST_DAY_CURRENT_MONTH)+'+to+'+str(FIRST_DAY_NEXT_MONTH))
+        return redirect(str(paydbtransactions_url)+str(paydbtransactions_filter)+str(FIRST_DAY_CURRENT_MONTH())+'+to+'+str(FIRST_DAY_NEXT_MONTH()))
     if frequency == 'year':
-        return redirect(str(paydbtransactions_url)+str(paydbtransactions_filter)+str(FIRST_DAY_CURRENT_YEAR)+'+to+'+str(FIRST_DAY_NEXT_YEAR))
+        return redirect(str(paydbtransactions_url)+str(paydbtransactions_filter)+str(FIRST_DAY_CURRENT_YEAR())+'+to+'+str(FIRST_DAY_NEXT_YEAR()))
     return redirect(str(paydbtransactions_url))
 
 def report_proposal_txs(frequency):
@@ -140,15 +135,15 @@ def report_proposal_txs(frequency):
     if frequency == 'lifetime':
         return redirect(str(proposal_url))
     if frequency == 'today':
-        return redirect(str(proposal_url)+str(proposal_filter)+str(TODAY)+'+to+'+str(TOMORROW))
+        return redirect(str(proposal_url)+str(proposal_filter)+str(TODAY())+'+to+'+str(TOMORROW()))
     if frequency == 'yesterday':
-        return redirect(str(proposal_url)+str(proposal_filter)+str(YESTERDAY)+'+to+'+str(TODAY))
+        return redirect(str(proposal_url)+str(proposal_filter)+str(YESTERDAY())+'+to+'+str(TODAY()))
     if frequency == 'week':
-        return redirect(str(proposal_url)+str(proposal_filter)+str(MONDAY)+'+to+'+str(NEXT_MONDAY))
+        return redirect(str(proposal_url)+str(proposal_filter)+str(MONDAY())+'+to+'+str(NEXT_MONDAY()))
     if frequency == 'month':
-        return redirect(str(proposal_url)+str(proposal_filter)+str(FIRST_DAY_CURRENT_MONTH)+'+to+'+str(FIRST_DAY_NEXT_MONTH))
+        return redirect(str(proposal_url)+str(proposal_filter)+str(FIRST_DAY_CURRENT_MONTH())+'+to+'+str(FIRST_DAY_NEXT_MONTH()))
     if frequency == 'year':
-        return redirect(str(proposal_url)+str(proposal_filter)+str(FIRST_DAY_CURRENT_YEAR)+'+to+'+str(FIRST_DAY_NEXT_YEAR))
+        return redirect(str(proposal_url)+str(proposal_filter)+str(FIRST_DAY_CURRENT_YEAR())+'+to+'+str(FIRST_DAY_NEXT_YEAR()))
     return redirect(str(proposal_url))
 
 def claimed_proposal_payment(table1, table2, start_date, end_date):
