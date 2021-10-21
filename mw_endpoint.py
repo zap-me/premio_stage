@@ -5,8 +5,9 @@ import json
 import base64
 from urllib.parse import urlparse
 
-from flask import Blueprint, render_template, request, jsonify
+from flask import Blueprint, render_template, request, jsonify, flash, url_for
 from flask_jsonrpc.exceptions import OtherError
+from werkzeug.utils import redirect
 
 from app_core import app, db, limiter
 from models import WavesTx, WavesTxSig
@@ -43,6 +44,23 @@ def inject_config_qrcode_svg():
 # Flask views
 #
 
+def _tx_broadcast(txid):
+    dbtx = WavesTx.from_txid(db.session, txid)
+    if not dbtx:
+        return bad_request('tx not found', 404)
+    tx = dbtx.tx_with_sigs()
+    error = ""
+    # broadcast transaction
+    try:
+        dbtx = tx_utils.broadcast_transaction(db.session, dbtx.txid)
+        db.session.add(dbtx)
+        db.session.commit()
+    except OtherError as ex:
+        error = ex.message
+        if hasattr(ex, 'data'):
+            error = "{} - {}".format(ex.message, ex.data)
+    return error, dbtx, tx
+
 @app.route("/config")
 def config():
     return jsonify(dict(asset_id=ASSET_ID, asset_name=ASSET_NAME, testnet=TESTNET, tx_signers=TX_SIGNERS, tx_types=tx_utils.TYPES))
@@ -52,7 +70,23 @@ def tx_link(txid):
     url_parts = urlparse(request.url)
     url = url_parts._replace(scheme="premiomwlink", path="/txid/" + txid).geturl()
     qrcode_svg = utils.qrcode_svg_create(url)
-    return render_template("mw/tx_link.html", qrcode_svg=qrcode_svg, url=url)
+    return render_template("mw/tx_link.html", qrcode_svg=qrcode_svg, url=url, txid=txid)
+
+@app.route("/tx_view/<txid>")
+def tx_view(txid):
+    dbtx = WavesTx.from_txid(db.session, txid)
+    if not dbtx:
+        flash('tx not found', 'danger')
+        return redirect(url_for('tx_link', txid=txid, _external=True))
+    tx = dbtx.tx_with_sigs()
+    return render_template("mw/tx_show.html", tx=json.dumps(tx))
+
+@app.route("/tx_broadcast_web/<txid>")
+def tx_broadcast_web(txid):
+    error, dbtx, tx = _tx_broadcast(txid)
+    if (error):
+        flash(error, 'danger')
+    return redirect(url_for('tx_link', txid=txid, _external=True))
 
 @app.route("/tx_create", methods=["POST"])
 def tx_create():
@@ -176,18 +210,5 @@ def tx_broadcast():
     if err_response:
         return err_response
     txid, = params
-    dbtx = WavesTx.from_txid(db.session, txid)
-    if not dbtx:
-        return bad_request('tx not found', 404)
-    tx = dbtx.tx_with_sigs()
-    error = ""
-    # broadcast transaction
-    try:
-        dbtx = tx_utils.broadcast_transaction(db.session, dbtx.txid)
-        db.session.add(dbtx)
-        db.session.commit()
-    except OtherError as ex:
-        error = ex.message
-        if hasattr(ex, 'data'):
-            error = "{} - {}".format(ex.message, ex.data)
+    error, dbtx, tx = _tx_broadcast(txid)
     return jsonify(dict(txid=txid, state=dbtx.state, tx=tx, error=error))

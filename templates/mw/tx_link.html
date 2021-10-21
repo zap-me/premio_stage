@@ -11,6 +11,8 @@
                 <center><a href="{{ url }}">{{ qrcode_svg | safe }}</a><br/></center>
                 <center><a href="{{ url }}">{{ url }}</a><br/></center>
                 </p>
+                <a class="btn btn-sm" href="/tx_view/{{ txid }}">View</a>
+                <a class="btn btn-sm" href="/tx_broadcast_web/{{ txid }}">Broadcast</a>
             </div>
         </div>
 
