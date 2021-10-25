@@ -123,29 +123,32 @@ def tx_create_and_play(session, api_key, action, recipient_email, amount, attach
             logger.error(error)
             return None, error
         recipient = User.from_email(session, recipient_email)
-        if action == PayDbTransaction.ACTION_ISSUE:
-            if not api_key.has_permission(Permission.PERMISSION_ISSUE):
-                error = 'ACTION_ISSUE: {} is not authorized'.format(api_key.token)
-            elif not user.has_role(Role.ROLE_ADMIN):
-                error = 'ACTION_ISSUE: {} is not authorized'.format(user.email)
-            elif not recipient == user:
-                error = 'ACTION_ISSUE: recipient should be {}'.format(user.email)
-        if action == PayDbTransaction.ACTION_TRANSFER:
-            user_bal = __balance(user)
-            if not api_key.has_permission(Permission.PERMISSION_TRANSFER):
-                error = 'ACTION_TRANSFER: {} is not authorized'.format(api_key.token)
-            elif not recipient:
-                error = 'ACTION_TRANSFER: recipient ({}) is not valid'.format(recipient_email)
-            elif user_bal < amount:
-                error = 'ACTION_TRANSFER: user balance ({}) is too low'.format(user_bal)
-        if action == PayDbTransaction.ACTION_DESTROY:
-            user_bal = __balance(user)
-            if not api_key.has_permission(Permission.PERMISSION_TRANSFER):
-                error = 'ACTION_TRANSFER: {} is not authorized'.format(api_key.token)
-            elif not recipient == user:
-                error = 'ACTION_ISSUE: recipient should be {}'.format(user.email)
-            elif user_bal < amount:
-                error = 'ACTION_DESTROY: user balance ({}) is too low'.format(user_bal)
+        if action not in PayDbTransaction.ACTIONS:
+            error = '{}: is not a valid action'.format(action)
+        else:
+            if action == PayDbTransaction.ACTION_ISSUE:
+                if not api_key.has_permission(Permission.PERMISSION_ISSUE):
+                    error = 'ACTION_ISSUE: {} is not authorized'.format(api_key.token)
+                elif not user.has_role(Role.ROLE_ADMIN):
+                    error = 'ACTION_ISSUE: {} is not authorized'.format(user.email)
+                elif not recipient == user:
+                    error = 'ACTION_ISSUE: recipient should be {}'.format(user.email)
+            if action == PayDbTransaction.ACTION_TRANSFER:
+                user_bal = __balance(user)
+                if not api_key.has_permission(Permission.PERMISSION_TRANSFER):
+                    error = 'ACTION_TRANSFER: {} is not authorized'.format(api_key.token)
+                elif not recipient:
+                    error = 'ACTION_TRANSFER: recipient ({}) is not valid'.format(recipient_email)
+                elif user_bal < amount:
+                    error = 'ACTION_TRANSFER: user balance ({}) is too low'.format(user_bal)
+            if action == PayDbTransaction.ACTION_DESTROY:
+                user_bal = __balance(user)
+                if not api_key.has_permission(Permission.PERMISSION_TRANSFER):
+                    error = 'ACTION_TRANSFER: {} is not authorized'.format(api_key.token)
+                elif not recipient == user:
+                    error = 'ACTION_ISSUE: recipient should be {}'.format(user.email)
+                elif user_bal < amount:
+                    error = 'ACTION_DESTROY: user balance ({}) is too low'.format(user_bal)
         if error:
             logger.error(error)
             return None, error

@@ -271,6 +271,7 @@ class PayDbTransaction(db.Model):
     ACTION_ISSUE = "issue"
     ACTION_TRANSFER = "transfer"
     ACTION_DESTROY = "destroy"
+    ACTIONS = (ACTION_ISSUE, ACTION_TRANSFER, ACTION_DESTROY)
 
     id = db.Column(db.Integer, primary_key=True)
     token = db.Column(db.String(255), unique=True, nullable=False)
