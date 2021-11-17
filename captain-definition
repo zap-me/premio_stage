@@ -9,7 +9,7 @@
                 "RUN pip3 install -r requirements.txt",
                 "COPY ./ /app",
                 "WORKDIR /app",
-                "ENV TZ=Europe/Berlin",
+                "ENV TZ=Pacific/Apia",
                 "RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone",
                 "RUN chmod +x backup_cron.sh",
                 "RUN (crontab -l; echo '0 15 * * * /app/backup_cron.sh >> /var/log/cron.log 2>&1') | crontab -",
