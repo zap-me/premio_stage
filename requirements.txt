@@ -19,5 +19,5 @@ qrcode==6.1
 firebase-admin==4.5.0
 python-gettext==4.0
 duplicity==0.8.19
-b2sdk==1.7.0
+b2sdk==1.14.1
 Pillow==8.3.2
