@@ -75,15 +75,15 @@ def tx_transfer_authorized(session, sender_email, recipient_email, amount, attac
         sender = User.from_email(session, sender_email)
         recipient = User.from_email(session, recipient_email)
         if not sender:
-            error = 'ACTION_TRANSFER: sender ({}) is not valid'.format(sender_email)
+            error = f'ACTION_TRANSFER: sender ({sender_email}) is not valid'
         elif not recipient:
-            error = 'ACTION_TRANSFER: recipient ({}) is not valid'.format(recipient_email)
+            error = f'ACTION_TRANSFER: recipient ({recipient_email}) is not valid'
         if error:
             logger.error(error)
             return None, error
         sender_balance = __balance(sender)
         if sender_balance < amount:
-            error = 'ACTION_TRANSFER: user balance ({}) is too low'.format(sender_balance)
+            error = f'ACTION_TRANSFER: user balance ({sender_balance}) is too low'
             logger.error(error)
             return None, error
         tx = PayDbTransaction(PayDbTransaction.ACTION_TRANSFER, sender, recipient, amount, attachment)
@@ -99,7 +99,7 @@ def tx_issue_authorized(session, sender_email, amount, attachment):
         error = ''
         sender = User.from_email(session, sender_email)
         if not sender:
-            error = 'ACTION_ISSUE: sender ({}) is not valid'.format(sender_email)
+            error = f'ACTION_ISSUE: sender ({sender_email}) is not valid'
         if error:
             logger.error(error)
             return None, error
@@ -116,39 +116,39 @@ def tx_create_and_play(session, api_key, action, recipient_email, amount, attach
         error = ''
         user = api_key.user
         if not user.is_active:
-            error = '{}: {} is not active'.format(action, user.email)
+            error = f'{action}: {user.email} is not active'
         elif amount <= 0:
-            error = '{}: amount ({}) is less then or equal to zero'.format(action, amount)
+            error = f'{action}: amount ({amount}) is less then or equal to zero'
         if error:
             logger.error(error)
             return None, error
         recipient = User.from_email(session, recipient_email)
         if action not in PayDbTransaction.ACTIONS:
-            error = '{}: is not a valid action'.format(action)
+            error = f'{action}: is not a valid action'
         else:
             if action == PayDbTransaction.ACTION_ISSUE:
                 if not api_key.has_permission(Permission.PERMISSION_ISSUE):
-                    error = 'ACTION_ISSUE: {} is not authorized'.format(api_key.token)
+                    error = f'ACTION_ISSUE: {api_key.token} is not authorized'
                 elif not user.has_role(Role.ROLE_ADMIN):
-                    error = 'ACTION_ISSUE: {} is not authorized'.format(user.email)
+                    error = f'ACTION_ISSUE: {user.email} is not authorized'
                 elif not recipient == user:
-                    error = 'ACTION_ISSUE: recipient should be {}'.format(user.email)
+                    error = f'ACTION_ISSUE: recipient should be {user.email}'
             if action == PayDbTransaction.ACTION_TRANSFER:
                 user_bal = __balance(user)
                 if not api_key.has_permission(Permission.PERMISSION_TRANSFER):
-                    error = 'ACTION_TRANSFER: {} is not authorized'.format(api_key.token)
+                    error = f'ACTION_TRANSFER: {api_key.token} is not authorized'
                 elif not recipient:
-                    error = 'ACTION_TRANSFER: recipient ({}) is not valid'.format(recipient_email)
+                    error = f'ACTION_TRANSFER: recipient ({recipient_email}) is not valid'
                 elif user_bal < amount:
-                    error = 'ACTION_TRANSFER: user balance ({}) is too low'.format(user_bal)
+                    error = f'ACTION_TRANSFER: user balance ({user_bal}) is too low'
             if action == PayDbTransaction.ACTION_DESTROY:
                 user_bal = __balance(user)
                 if not api_key.has_permission(Permission.PERMISSION_TRANSFER):
-                    error = 'ACTION_TRANSFER: {} is not authorized'.format(api_key.token)
+                    error = f'ACTION_TRANSFER: {api_key.token} is not authorized'
                 elif not recipient == user:
-                    error = 'ACTION_ISSUE: recipient should be {}'.format(user.email)
+                    error = f'ACTION_ISSUE: recipient should be {user.email}'
                 elif user_bal < amount:
-                    error = 'ACTION_DESTROY: user balance ({}) is too low'.format(user_bal)
+                    error = f'ACTION_DESTROY: user balance ({user_bal}) is too low'
         if error:
             logger.error(error)
             return None, error

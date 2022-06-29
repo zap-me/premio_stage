@@ -290,10 +290,10 @@ def tx_serialize(txn):
     return data
 
 def post(host, api, data):
-    return requests.post('%s%s' % (host, api), data=data, headers={'content-type': 'application/json'}).json()
+    return requests.post('%s%s' % (host, api), data=data, headers={'content-type': 'application/json'}).json() # pylint: disable=consider-using-f-string
 
 def get(host, api):
-    return requests.get('%s%s' % (host, api)).json()
+    return requests.get('%s%s' % (host, api)).json() # pylint: disable=consider-using-f-string
 
 def broadcast_tx(host, data):
     return post(host, "/transactions/broadcast", data)

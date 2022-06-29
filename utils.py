@@ -20,7 +20,7 @@ def int2asset(num):
     if num is None:
         return '!ERR!'
     num = decimal.Decimal(num)/100
-    return '{num:0.2f}'.format(num=num)
+    return '{num:0.2f}'.format(num=num) # pylint: disable=consider-using-f-string
 
 def _attachment(b64data, mime_type, filename, content_id, disposition='attachment'):
     attachment = Attachment()
