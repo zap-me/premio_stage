@@ -59,7 +59,7 @@ def reward_create():
         return bad_request(web_utils.INVALID_AMOUNT)
     reward_proposal, reward_payment = _reward_create(api_key.user, reason, cat, recipient, amount, message)
     db.session.commit()
-    return jsonify(dict(proposal=dict(reason=reason, category=category, status=reward_proposal.status, payment=dict(amount=amount, email=reward_payment.email, mobile=reward_payment.mobile, address=reward_payment.recipient, message=message, status=reward_payment.status))))
+    return jsonify(dict(proposal=dict(reason=reason, category=category, status=reward_proposal.status, payment=dict(amount=amount, email=reward_payment.email, mobile=reward_payment.mobile, address=reward_payment.recipient, message=message, status=reward_payment.status, token=reward_payment.token))))
 
 @reward.route('/referral_config', methods=['POST'])
 def referral_config():
