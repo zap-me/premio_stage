@@ -58,7 +58,7 @@ def _tx_broadcast(txid):
     except OtherError as ex:
         error = ex.message
         if hasattr(ex, 'data'):
-            error = "{} - {}".format(ex.message, ex.data)
+            error = f'{ex.message} - {ex.data}'
     return error, dbtx, tx
 
 @app.route("/config")
@@ -83,8 +83,8 @@ def tx_view(txid):
 
 @app.route("/tx_broadcast_web/<txid>")
 def tx_broadcast_web(txid):
-    error, dbtx, tx = _tx_broadcast(txid)
-    if (error):
+    error, dbtx, tx = _tx_broadcast(txid) # pylint: disable=unused-variable
+    if error:
         flash(error, 'danger')
     return redirect(url_for('tx_link', txid=txid, _external=True))
 

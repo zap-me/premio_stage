@@ -4,6 +4,7 @@
 # pylint: disable=too-few-public-methods
 # pylint: disable=too-many-locals
 # pylint: disable=too-many-lines
+# pylint: disable=invalid-name
 
 import time
 import datetime
@@ -22,7 +23,7 @@ from flask_admin.helpers import get_form_data
 from flask_admin.contrib import sqla
 from flask_admin.contrib.sqla.filters import BaseSQLAFilter
 from flask_admin.model import filters, typefmt
-from wtforms.fields import TextField, DecimalField, FileField
+from wtforms.fields import StringField, DecimalField, FileField
 from wtforms.validators import DataRequired
 from wtforms import validators
 from marshmallow import Schema, fields
@@ -359,7 +360,7 @@ class RewardPayment(db.Model):
         return session.query(cls).filter(cls.token == token).first()
 
     def __repr__(self):
-        return "<RewardPayment %r>" % (self.token)
+        return f'<RewardPayment {self.token}>'
 
 categories_reward_proposals = db.Table(
     'categories_reward_proposals',
@@ -434,7 +435,7 @@ class RewardProposal(db.Model):
         return session.query(cls).filter(cls.status == status).all()
 
     def __repr__(self):
-        return "<RewardProposal %r>" % (self.id)
+        return f'<RewardProposal {self.id}>'
 
 # Setup Flask-Security
 user_datastore = SQLAlchemyUserDatastore(db, User, Role)
@@ -530,9 +531,10 @@ def format_amount_text(self, context, model, name):
 
 def format_amount(self, context, model, name):
     amount = int2asset(model.amount)
-    html = '''
+    asset = app.config["ASSET_NAME"]
+    html = f'''
     {amount} {asset}
-    '''.format(amount=amount, asset=app.config["ASSET_NAME"])
+    '''
     return Markup(html)
 
 def format_date(self, context, model, name):
@@ -840,7 +842,7 @@ class RewardProposalModelView(BaseModelView):
         else:
             raise Exception('invalid column')
         name = email.split("@")[0]
-        html = '<span title="{email}">{name}</span>'.format(email=email, name=name)
+        html = f'<span title="{email}">{name}</span>'
         return Markup(html)
 
     def _format_status_column(view, context, model, name):
@@ -876,9 +878,9 @@ class RewardProposalModelView(BaseModelView):
         total_claimed = view._format_claimed(model)
         payments_url = url_for('.payments_view', reward_proposal_id=model.id)
 
-        html = '''
+        html = f'''
             <a href="{payments_url}">{total_claimed}</a>
-        '''.format(payments_url=payments_url, total_claimed=total_claimed)
+        '''
         return Markup(html)
 
     def _format_total_column(view, context, model, name):
@@ -908,7 +910,7 @@ class RewardProposalModelView(BaseModelView):
     form_args = dict(
             reason=dict(label='Reason', validators=[DataRequired()])
             )
-    form_extra_fields = {'recipient': TextField('Recipient *'), 'message': TextField('Message *'), 'amount': DecimalField('Amount *', validators=[validators.Optional()]), 'csvfile': FileField('CSV File')}
+    form_extra_fields = {'recipient': StringField('Recipient *'), 'message': StringField('Message *'), 'amount': DecimalField('Amount *', validators=[validators.Optional()]), 'csvfile': FileField('CSV File')}
 
     def _validate_form(self, form):
         csv_rows = None
@@ -987,11 +989,11 @@ class RewardProposalModelView(BaseModelView):
         # commit to db
         try:
             self.session.commit()
-            flash('Reward proposal {reward_proposal_id} set as authorized'.format(reward_proposal_id=reward_proposal_id))
+            flash(f'Reward proposal {reward_proposal_id} set as authorized')
         except (SQLAlchemyError, DBAPIError) as ex:
             if not self.handle_view_exception(ex):
                 raise
-            flash('Failed to set reward proposal {reward_proposal_id} as authorized'.format(reward_proposal_id=reward_proposal_id), 'error')
+            flash(f'Failed to set reward proposal {reward_proposal_id} as authorized', 'error')
         return redirect(return_url)
 
     @expose('decline', methods=['POST'])
@@ -1019,11 +1021,11 @@ class RewardProposalModelView(BaseModelView):
         # commit to db
         try:
             self.session.commit()
-            flash('Reward proposal {reward_proposal_id} set as declined'.format(reward_proposal_id=reward_proposal_id))
+            flash(f'Reward proposal {reward_proposal_id} set as declined')
         except (SQLAlchemyError, DBAPIError) as ex:
             if not self.handle_view_exception(ex):
                 raise
-            flash('Failed to set reward proposal {reward_proposal_id} as declined'.format(reward_proposal_id=reward_proposal_id), 'error')
+            flash(f'Failed to set reward proposal {reward_proposal_id} as declined', 'error')
         return redirect(return_url)
 
     @expose('reward_payments/<reward_proposal_id>', methods=['GET'])
@@ -1095,33 +1097,34 @@ class WavesTxModelView(RestrictedModelView):
         attachment = json_obj["attachment"]
         signature = json_obj["signature"]
         txtype = json_obj["type"]
+        asset = app.config["ASSET_NAME"]
 
         # pylint: disable=duplicate-string-formatting-argument
-        html = '''
-        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#TxDetailsModal{}">
+        html = f'''
+        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#TxDetailsModal{ids}">
         Tx Details
         </button>
 
-<div class="modal fade" id="TxDetailsModal{}" tabindex="-1" role="dialog" aria-labelledby="TxDetailsModalLabel{}" aria-hidden="true">
+<div class="modal fade" id="TxDetailsModal{ids}" tabindex="-1" role="dialog" aria-labelledby="TxDetailsModalLabel{ids}" aria-hidden="true">
   <div class="modal-dialog" role="document">
     <div class="modal-content">
       <div class="modal-header">
-        <h4 class="modal-title" id="TxDetailModalLabel{}">Transaction Details</h4>
+        <h4 class="modal-title" id="TxDetailModalLabel{ids}">Transaction Details</h4>
         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
           <span aria-hidden="true">&times;</span>
         </button>
       </div>
       <div class="modal-body">
-         assetId: {}<br/>
-         feeAssetId: {}<br/>
-         senderPublicKey: {}<br/>
-         recipient: {}<br/>
-         amount: {} {}<br/> 
-         fee: {}</br>
-         timestamp: {}<br/>
-         attachment: {}<br/>
-         signature: {}<br/>
-         type: {}<br/>
+         assetId: {asset_id}<br/>
+         feeAssetId: {fee_asset_id}<br/>
+         senderPublicKey: {sender_public_key}<br/>
+         recipient: {recipient}<br/>
+         amount: {amount} {asset}<br/> 
+         fee: {fee}</br>
+         timestamp: {timestamp}<br/>
+         attachment: {attachment}<br/>
+         signature: {signature}<br/>
+         type: {txtype}<br/>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
@@ -1129,28 +1132,28 @@ class WavesTxModelView(RestrictedModelView):
     </div>
   </div>
 </div>
-        '''.format(ids, ids, ids, ids, asset_id, fee_asset_id, sender_public_key, recipient, amount, app.config["ASSET_NAME"], fee, timestamp, attachment, signature, txtype)
+        '''
         return Markup(html)
 
     def _format_txid_html(view, context, model, name):
         ids = model.txid
         truncate_txids = str(ids[:6]+'...')
         # pylint: disable=duplicate-string-formatting-argument
-        html = '''
-        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#TxidModal{}">
-        {}
+        html = f'''
+        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#TxidModal{ids}">
+        {truncate_txids}
         </button>
-<div class="modal fade" id="TxidModal{}" tabindex="-1" role="dialog" aria-labelledby="TxidModalLabel{}" aria-hidden="true">
+<div class="modal fade" id="TxidModal{ids}" tabindex="-1" role="dialog" aria-labelledby="TxidModalLabel{ids}" aria-hidden="true">
   <div class="modal-dialog" role="document">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="TxidModalLabel{}">Transaction ID</h5>
+        <h5 class="modal-title" id="TxidModalLabel{ids}">Transaction ID</h5>
         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
           <span aria-hidden="true">&times;</span>
         </button>
       </div>
       <div class="modal-body">
-         {}
+         {ids}
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
@@ -1158,7 +1161,7 @@ class WavesTxModelView(RestrictedModelView):
     </div>
   </div>
 </div>
-        '''.format(ids, truncate_txids, ids, ids, ids, ids)
+        '''
         return Markup(html)
 
     column_list = ['date', 'txid', 'type', 'state', 'amount', 'json_data_signed', 'json_data']
@@ -1213,7 +1216,7 @@ class WavesTx(db.Model):
         return session.query(cls).count()
 
     def __repr__(self):
-        return '<WavesTx %r>' % (self.txid)
+        return f'<WavesTx {self.txid}>'
 
     def to_json(self):
         tx_schema = WavesTxSchema()
@@ -1261,7 +1264,7 @@ class Topic(db.Model):
         return session.query(cls).filter(cls.topic == name).first()
 
     def __repr__(self):
-        return '<Topic %r %r>' % self.topic
+        return f'<Topic {self.topic} {self.topic}>'
 
 ### define key/value setting models
 
@@ -1276,7 +1279,7 @@ class Setting(db.Model):
         self.value = value
 
     def __repr__(self):
-        return '<Setting %r %r>' % (self.key, self.value)
+        return f'<Setting {self.key} {self.value}>'
 
 ### define user models
 
@@ -1420,9 +1423,9 @@ class PushNotificationLocationModelView(RestrictedModelView):
         lon = model.longitude
 
         # pylint: disable=duplicate-string-formatting-argument
-        html = '''
-        <a href="http://www.google.com/maps/place/{},{}">{}, {}</a>
-        '''.format(lat, lon, lat, lon)
+        html = f'''
+        <a href="http://www.google.com/maps/place/{lat},{lon}">{lat}, {lon}</a>
+        '''
         return Markup(html)
 
     column_list = ['date', 'location', 'fcm_registration_token']

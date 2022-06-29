@@ -1,5 +1,6 @@
 # pylint: disable=unbalanced-tuple-unpacking
 # pylint: disable=too-many-locals
+# pylint: disable=invalid-name
 
 import logging
 from datetime import date, timedelta
@@ -26,17 +27,27 @@ if SERVER_MODE == SERVER_MODE_WAVES:
     ASSET_ID = app.config["ASSET_ID"]
     TESTNET = app.config["TESTNET"]
 
-#### FREQUECNY DATES USED
-TODAY = lambda: date.today() # pylint: disable=unnecessary-lambda
-YESTERDAY = lambda: date.today() - timedelta(days=1)
-TOMORROW = lambda: date.today() + timedelta(days=1)
-WEEKDAY = lambda: date.today().weekday()
-MONDAY = lambda: date.today() - timedelta(days=date.today().weekday())
-NEXT_MONDAY = lambda: date.today() + timedelta(days=-date.today().weekday(), weeks=1)
-FIRST_DAY_CURRENT_MONTH = lambda: date.today().replace(day=1)
-FIRST_DAY_NEXT_MONTH = lambda: date.today().replace(day=1) + relativedelta(months=+1)
-FIRST_DAY_CURRENT_YEAR = lambda: date.today().replace(day=1) + relativedelta(month=1)
-FIRST_DAY_NEXT_YEAR = lambda: date.today().replace(day=1) + relativedelta(month=1, years=+1)
+# FREQUENTLY USED DATES
+def TODAY():
+    return date.today()
+def YESTERDAY():
+    return date.today() - timedelta(days=1)
+def TOMORROW():
+    return date.today() + timedelta(days=1)
+def WEEKDAY():
+    return date.today().weekday()
+def MONDAY():
+    return date.today() - timedelta(days=date.today().weekday())
+def NEXT_MONDAY():
+    return date.today() + timedelta(days=-date.today().weekday(), weeks=1)
+def FIRST_DAY_CURRENT_MONTH():
+    return date.today().replace(day=1)
+def FIRST_DAY_NEXT_MONTH():
+    return date.today().replace(day=1) + relativedelta(months=+1)
+def FIRST_DAY_CURRENT_YEAR():
+    return date.today().replace(day=1) + relativedelta(month=1)
+def FIRST_DAY_NEXT_YEAR():
+    return date.today().replace(day=1) + relativedelta(month=1, years=+1)
 
 def report_dashboard_premio(premio_balance, premio_stage_account, total_balance, claimable):
     premio_tx_count_lifetime = PayDbTransaction.query.count()
